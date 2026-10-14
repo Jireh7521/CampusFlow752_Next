@@ -1,21 +1,30 @@
 # CampusFlow
 
 CampusFlow is a Python command-line helpdesk for Learn2Earn campus staff. It records technical
-support requests (Wi-Fi outages, faulty laptops, broken dev environments), calculates their
-priority, assigns them to staff, tracks progress, and saves everything to a JSON file.
+support requests (Wi-Fi outages, faulty laptops, broken development environments), calculates
+their priority, assigns them to staff, tracks progress, stores follow-up notes, supports searching,
+and saves tickets to JSON.
+
+It also includes an **Engineering Understanding Check**: a six-question multiple-choice quiz about
+the project's engineering rules. It validates answers, retries invalid choices, calculates a score,
+and asks the learner to explain two answers for mentor discussion.
 
 ## Team
 
 | Fellow | Role | Contribution |
 |--------|------|--------------|
-| _Engineer A name_ | _e.g. tickets, validation, priority_ | _fill in_ |
-| _Engineer B name_ | _e.g. workflow, queue, reports_ | _fill in_ |
+| _Engineer A name_ | _Confirm actual role_ | _Record the tests and features actually contributed_ |
+| _Engineer B name_ | _Confirm actual role_ | _Record the tests and features actually contributed_ |
+
+Replace these placeholders with both engineers' agreed names, roles, and verified contributions.
+Do not claim work or reviews that have not been completed.
 
 ## Requirements and setup
 
-- Python 3.8 or newer. Standard library only; nothing to install.
+- Python 3.8 or newer.
+- Standard library only; no third-party runtime dependencies.
 
-```
+```bash
 git clone <repository-url>
 cd <repository-folder>
 python main.py
@@ -25,117 +34,143 @@ python main.py
 
 | Option | What it does |
 |--------|--------------|
-| 1 | Create a ticket (title, category, urgency, affected users) |
+| 1 | Create a ticket |
 | 2 | List all tickets |
-| 3 | View one ticket in detail |
-| 4 | Assign a ticket to a staff member |
-| 5 | Change status (`in_progress`, `resolved`) |
+| 3 | View one ticket |
+| 4 | Assign a ticket |
+| 5 | Change ticket status |
 | 6 | Reopen a resolved ticket |
 | 7 | Show the work queue |
 | 8 | Show the report |
+| 9 | Add a follow-up note |
+| 10 | Search tickets with optional filters |
+| 11 | Search tickets in priority order |
+| 12 | Run the Engineering Understanding Check |
 | 0 | Exit |
 
-The menu runs until you choose Exit. Invalid input shows an `Error:` message and never changes
-or corrupts stored tickets.
+The menu repeats until you choose Exit. Invalid input displays an error or validation message.
+A rejected action must not partially modify or overwrite saved ticket data.
 
-## Ticket fields and validation
+## Tickets, validation, and IDs
 
-`id`, `title`, `category`, `urgency`, `affected_users`, `priority`, `status`, `assigned_to`.
+Ticket fields include `id`, `title`, `category`, `urgency`, `affected_users`, `priority`,
+`status`, `assigned_to`, and `notes`.
 
-- IDs are generated automatically: `T001`, `T002`, ...
-- Categories: `Network`, `Hardware`, `Software`, `Other`. Urgency: `low`, `medium`, `high`.
-  Any letter case is accepted and normalized.
-- Title must not be blank. Affected users must be a whole number of 1 or more
-  (0, negatives, decimals and text are rejected).
+- IDs are generated automatically as `T001`, `T002`, and so on.
+- Categories: `Network`, `Hardware`, `Software`, `Other`.
+- Urgency: `low`, `medium`, `high`.
+- Category and urgency accept letter-case variations and are normalized.
+- Titles cannot be blank. Affected users must be a positive whole number; zero, negatives,
+  decimals, booleans, and invalid text are rejected.
 
 ## Priority rules
 
 The first matching rule wins:
 
-1. `high` urgency **and** 10+ affected users -> `critical`
-2. `high` urgency **or** 10+ affected users -> `high`
-3. `medium` urgency **or** 3+ affected users -> `medium`
-4. everything else -> `low`
+1. `high` urgency **and** 10 or more affected users → `critical`
+2. `high` urgency **or** 10 or more affected users → `high`
+3. `medium` urgency **or** 3 or more affected users → `medium`
+4. Otherwise → `low`
 
 ## Status workflow
 
+```text
+open -> in_progress -> resolved
+ ^                       |
+ +-------- reopen -------+
 ```
-open  ->  in_progress  ->  resolved
-  ^                           |
-  +-------- reopen -----------+
-```
 
-| From          | Allowed next status |
-|---------------|---------------------|
-| `open`        | `in_progress`       |
-| `in_progress` | `resolved`          |
-| `resolved`    | `open` (reopen)     |
+- A ticket must have an assignee before it can move to `in_progress`.
+- Skipping a step or making an unsupported transition is rejected.
+- A resolved ticket cannot be assigned or otherwise modified until reopened.
+- Reopening changes the status to `open` and retains the previous assignee.
 
-- A ticket with no assignee cannot move to `in_progress`.
-- Skipping a step or moving backwards is rejected.
-- A resolved ticket cannot be modified (including assignment) until it is reopened.
+## Follow-up notes
 
-## Work queue
+Notes have sequential IDs such as `N001` and `N002`, and include an author and message.
+Blank or invalid note fields are rejected. Notes cannot be added to a resolved ticket until it
+has been reopened. Notes and note-ID continuity are preserved when tickets are saved and loaded.
 
-Shows `open` tickets ordered `critical` -> `high` -> `medium` -> `low`. Tickets with the same
-priority are ordered by the earlier numeric ticket ID (`T2` before `T10`).
-`in_progress` and `resolved` tickets are not listed.
+## Work queue, search, and reports
 
-## Reports
+- The work queue lists `open` tickets ordered `critical` → `high` → `medium` → `low`.
+  Ties are sorted by the numeric portion of the ticket ID. Other statuses are excluded.
+- Search supports a title query and optional category, status, and priority filters. Filters are
+  combined, and a separate menu option sorts search results by priority.
+- Reports show total ticket count and counts by every status and priority, including zero counts.
+  Empty reports are supported.
 
-Total ticket count plus counts by status and by priority. Every category is shown, with 0
-when unused, so an empty system still gives a valid report.
+## Engineering Understanding Check
 
-## Where tickets are saved
+Choose menu option **12** to run the six-question multiple-choice check. Questions cover engineering
+decisions and rules in the project. Answers are case-insensitive; invalid choices are rejected and
+the user is prompted again until a valid A/B/C/D answer is entered. The check awards one point per
+correct answer and prints a score out of six. The learner must also provide two non-empty
+explanations, which are displayed for mentor discussion.
 
-Tickets are saved to `data/tickets.json` after every successful change and loaded on startup.
+The quiz logic and scoring are separated into testable functions. Automated tests cover the question
+bank, full and zero scores, partial scoring, invalid choices, answer retry behavior, and displayed
+results. The check is intended to support understanding, not replace code review or hands-on work.
 
-- **Start fresh:** delete `data/tickets.json` (or move it aside).
-- **Missing file:** the app starts with no tickets.
-- **Corrupted file:** the app refuses to start and tells you why. It never overwrites a file it
-  cannot read, so no data is silently erased.
-- `data/tickets.json` is ignored by Git.
+## JSON persistence and safety
+
+Tickets are saved to `data/tickets.json` after each successful change and loaded on startup.
+
+- If the file is missing, CampusFlow starts with no tickets.
+- Corrupt JSON, duplicate ticket IDs, or invalid persisted collections are rejected safely.
+- CampusFlow refuses to start when stored data cannot be read safely; it does not silently replace
+  the unreadable file.
+- Ticket IDs continue from the highest existing ID after reload.
+- The local data file is ignored by Git.
 
 ## Running the tests
 
-```
+From the repository root, run:
+
+```bash
 python -m unittest discover -s tests -v
 ```
 
-| File | Covers |
-|------|--------|
-| `tests/test_tickets.py` | priority rules and boundaries, validation, ID generation, assign, list/view |
-| `tests/test_workflow.py` | transitions, unassigned rule, reopen, unknown IDs, no-change on failure |
-| `tests/test_work_queue.py` | priority order, numeric tie-break, open-only filter |
-| `tests/test_reports.py` | empty report, mixed counts, corrupt data |
-| `tests/test_storage.py` | save/reload, missing file, corrupted JSON, unique IDs after reload |
-| `tests/test_cli.py` | scripted full menu sessions, restart, corrupted file at startup |
+The test suite uses Python's built-in `unittest`; no extra test packages are required.
+
+| Test file | Coverage |
+|-----------|----------|
+| `tests/test_tickets.py` | Priority rules, validation, IDs, assignment, ticket views, search |
+| `tests/test_workflow.py` | Status transitions, unassigned-ticket rule, reopening, rejected changes |
+| `tests/test_work_queue.py` | Priority ordering, numeric ID tie-breaks, included statuses |
+| `tests/test_reports.py` | Empty reports, status/priority counts, report changes |
+| `tests/test_storage.py` | Save/load, missing and corrupt files, collection validation, ID continuity |
+| `tests/test_notes.py` | Note validation, sequential IDs, workflow restrictions, persistence |
+| `tests/test_cli.py` | Menu sessions, restart behavior, notes, search, and safe error handling |
+| `tests/test_engineering_check.py` | Question bank, scoring, invalid-answer retries, quiz output |
 
 ## Project layout
 
-```
-main.py                  entry point
+```text
+main.py
 campusflow/
-  tickets.py             create, validation, priority, assign, list/view
-  workflow.py            status transitions, reopen
-  work_queue.py          priority-sorted open queue
-  reports.py             totals and breakdowns
-  storage.py             JSON load/save
-  cli.py                 text menu
-tests/                   unittest suites
-docs/                    design-decisions.md, ai-learning-log.md
+  tickets.py                    ticket creation, validation, priority, search
+  workflow.py                   status transitions and reopening
+  work_queue.py                 priority-sorted work queue
+  reports.py                    totals and breakdowns
+  storage.py                    JSON load/save and validation
+  notes.py                      follow-up notes
+  engineering_check.py          quiz interaction and scoring
+  engineering_check_questions.py question bank
+  cli.py                        text menu
+tests/                           unittest suites
+docs/                            design decisions and learning log
 ```
 
 ## Known limitations
 
-- Text interface only; one user at a time (no file locking).
-- The queue lists `open` tickets only; `in_progress` tickets are not shown in it.
-- `in_progress -> open` is not supported; only resolved tickets can be reopened.
-- Reopening keeps the previous assignee.
-- Staff names are free text (no staff list).
-- Tickets cannot be deleted or edited except for assignment and status.
+- Text interface only; designed for one local user at a time.
+- The work queue lists `open` tickets only; `in_progress` tickets are not shown.
+- Moving directly from `in_progress` back to `open` is unsupported; only resolved tickets can be reopened.
+- Staff names are free text; there is no staff directory.
+- Tickets cannot be deleted or freely edited.
 
 ## Pull requests
 
-- Engineer A PR: _link_
-- Engineer B PR: _link_
+- Engineer A PR: _add the actual PR link_
+- Engineer B PR: _add the actual PR link_
