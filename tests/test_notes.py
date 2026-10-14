@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 from campusflow.notes import add_note
-from campusflow.storage import load_tickets, save_tickets
+from campusflow.storage import StorageError, load_tickets, save_tickets
 from campusflow.tickets import create_ticket, format_ticket
 
 
@@ -89,6 +89,26 @@ class TestFollowUpNotes(unittest.TestCase):
                 json.dump(tickets, handle)
             loaded = load_tickets(path)
         self.assertEqual(loaded[0]["notes"], [])
+
+    def test_malformed_and_duplicate_persisted_notes_are_rejected(self):
+        malformed_notes = [
+            [{"note_id": "N001", "author": "Amina"}],
+            [{"note_id": "N001", "author": "Amina", "message": "ok"}],
+            [
+                {"note_id": "N001", "author": "Amina", "message": "First update"},
+                {"note_id": "N001", "author": "Bola", "message": "Second update"},
+            ],
+        ]
+        with tempfile.TemporaryDirectory() as folder:
+            path = os.path.join(folder, "tickets.json")
+            for notes in malformed_notes:
+                with self.subTest(notes=notes):
+                    tickets = make_ticket()
+                    tickets[0]["notes"] = notes
+                    with open(path, "w", encoding="utf-8") as handle:
+                        json.dump(tickets, handle)
+                    with self.assertRaises(StorageError):
+                        load_tickets(path)
 
 
 if __name__ == "__main__":
