@@ -121,7 +121,7 @@ class TestCli(unittest.TestCase):
         _, out = drive(
             [
                 "1", "Campus Wi-Fi is down", "network", "high", "15",
-                "9", "campus", "", "", "",
+                "10", "campus", "", "", "",
                 "0",
             ],
             self.path,
@@ -135,7 +135,7 @@ class TestCli(unittest.TestCase):
         _, out = drive(
             [
                 "1", "Campus Wi-Fi is down", "network", "high", "15",
-                "9", "campus", "plumbing", "NETWORK", "", "",
+                "10", "campus", "plumbing", "NETWORK", "", "",
                 "0",
             ],
             self.path,
@@ -154,13 +154,13 @@ class TestCli(unittest.TestCase):
             [
                 "1", "First low priority", "other", "low", "1",
                 "1", "Second critical priority", "network", "high", "15",
-                "10", "", "", "", "",
+                "11", "", "", "", "",
                 "7",
                 "0",
             ],
             self.path,
         )
-        self.assertIn("10. Search tickets (priority sorted)", out)
+        self.assertIn("11. Search tickets (priority sorted)", out)
         self.assertIn("7. Work queue", out)
         self.assertLess(out.index("T002 | Second critical priority"), out.index("T001 | First low priority"))
 
