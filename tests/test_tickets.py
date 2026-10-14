@@ -61,13 +61,14 @@ class TestValidation(unittest.TestCase):
         self.assertEqual(tickets, [])
 
     def test_bad_affected_users_rejected(self):
-        for bad in (-3, "-3", 2.5, "2.5", "many", "", None, True):
+        for bad in (-3, "-3", 2.5, "2.5", "15", "many", "", None, True):
             with self.subTest(value=bad):
                 with self.assertRaises(ValueError):
                     validate_affected_users(bad)
 
-    def test_digit_string_is_accepted(self):
-        self.assertEqual(validate_affected_users(" 15 "), 15)
+    def test_string_affected_users_are_rejected(self):
+        with self.assertRaises(ValueError):
+            validate_affected_users("15")
 
     def test_blank_title_rejected(self):
         tickets = []
