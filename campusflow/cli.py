@@ -11,6 +11,12 @@ from campusflow.tickets import (
     create_ticket,
     format_ticket,
     format_ticket_list,
+    format_search_results,
+    search_tickets,
+    sort_tickets_by_priority,
+    SEARCH_CATEGORIES,
+    SEARCH_STATUSES,
+    SEARCH_PRIORITIES,
     parse_affected_users_input,
 )
 from campusflow.work_queue import get_work_queue
@@ -26,6 +32,8 @@ MENU = """
 6. Reopen resolved ticket
 7. Work queue
 8. Report
+9. Search tickets
+10. Search tickets (priority sorted)
 0. Exit"""
 
 
@@ -60,6 +68,20 @@ def run(input_fn=input, print_fn=print, path=DEFAULT_PATH):
             print_fn(f"Error: {error}")
         except OSError as error:
             print_fn(f"Error: could not save tickets: {error}")
+
+
+
+def _prompt_optional_filter(label, choices, input_fn, print_fn):
+    """Prompt until a valid optional filter is entered; blank means no filter."""
+    options = ", ".join(choices)
+    while True:
+        value = input_fn(f"{label} filter ({options}; blank for any): ").strip()
+        if not value:
+            return None
+        for option in choices:
+            if value.casefold() == option.casefold():
+                return option
+        print_fn(f"Invalid {label.lower()} filter. Choose one of: {options}, or leave blank.")
 
 
 def _handle(choice, tickets, input_fn, print_fn):
@@ -116,6 +138,29 @@ def _handle(choice, tickets, input_fn, print_fn):
 
     if choice == "8":
         print_fn(format_report(build_report(tickets)))
+        return False
+
+    if choice in {"9", "10"}:
+        title_query = input_fn("Title contains (leave blank for any title): ")
+        category = _prompt_optional_filter(
+            "Category", SEARCH_CATEGORIES, input_fn, print_fn
+        )
+        status = _prompt_optional_filter(
+            "Status", SEARCH_STATUSES, input_fn, print_fn
+        )
+        priority = _prompt_optional_filter(
+            "Priority", SEARCH_PRIORITIES, input_fn, print_fn
+        )
+        matches = search_tickets(
+            tickets,
+            title_query=title_query,
+            category=category,
+            status=status,
+            priority=priority,
+        )
+        if choice == "10":
+            matches = sort_tickets_by_priority(matches)
+        print_fn(format_search_results(matches))
         return False
 
     print_fn("Invalid choice. Enter a number from the menu.")
