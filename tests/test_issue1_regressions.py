@@ -43,6 +43,7 @@ class TestFailedActionsPreserveCompleteState(unittest.TestCase):
             {"urgency": "urgent"},
             {"affected_users": True},
             {"affected_users": 1.5},
+            {"affected_users": "15"},
             {"affected_users": "many"},
             {"affected_users": 0},
             {"affected_users": -1},
