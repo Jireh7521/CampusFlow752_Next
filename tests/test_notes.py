@@ -58,15 +58,26 @@ class TestFollowUpNotes(unittest.TestCase):
         add_note(tickets, "T001", "Amina", "x" * 300)
         self.assertEqual(len(tickets[0]["notes"]), 2)
 
-    def test_resolved_rejects_notes_but_reopened_ticket_accepts_them(self):
-        tickets = make_ticket(status="resolved")
+    def test_notes_survive_resolution_and_reopening(self):
+        from campusflow.tickets import assign_ticket
+        from campusflow.workflow import change_status, reopen_ticket
+
+        tickets = make_ticket()
+        add_note(tickets, "T001", "Amina", "First update")
+        assign_ticket(tickets, "T001", "Bola")
+        change_status(tickets, "T001", "in_progress")
+        change_status(tickets, "T001", "resolved")
+
         before = copy.deepcopy(tickets)
         with self.assertRaises(ValueError):
-            add_note(tickets, "T001", "Amina", "Valid message")
+            add_note(tickets, "T001", "Amina", "Blocked update")
         self.assertEqual(tickets, before)
-        tickets[0]["status"] = "open"
+
+        reopen_ticket(tickets, "T001")
         add_note(tickets, "T001", "Amina", "After reopening")
-        self.assertEqual(tickets[0]["notes"][0]["note_id"], "N001")
+        self.assertEqual(
+            [note["note_id"] for note in tickets[0]["notes"]], ["N001", "N002"]
+        )
 
     def test_notes_and_note_id_continuity_survive_save_and_load(self):
         tickets = make_ticket()
