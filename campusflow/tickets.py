@@ -67,6 +67,13 @@ def parse_affected_users_input(value):
     return validate_affected_users(number)
 
 
+def validate_staff_name(staff_name):
+    """Return a stripped staff name, rejecting blank or non-text values."""
+    if not isinstance(staff_name, str) or not staff_name.strip():
+        raise ValueError("Staff member name must not be blank.")
+    return staff_name.strip()
+
+
 # ---------- priority engine ----------
 
 def calculate_priority(urgency, affected_users):
@@ -134,10 +141,9 @@ def assign_ticket(tickets, ticket_id, staff_name):
     reopened first).
     """
     ticket = find_ticket(tickets, ticket_id)
-    if not isinstance(staff_name, str) or not staff_name.strip():
-        raise ValueError("Staff member name must not be blank.")
+    staff_name = validate_staff_name(staff_name)
     ensure_modifiable(ticket)
-    ticket["assigned_to"] = staff_name.strip()
+    ticket["assigned_to"] = staff_name
     return ticket
 
 
