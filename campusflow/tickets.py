@@ -178,3 +178,87 @@ def format_ticket_list(tickets):
             f"{t['title']} | {assignee}"
         )
     return "\n".join(lines)
+
+
+# ---------- F4: search tickets ----------
+
+SEARCH_CATEGORIES = CATEGORIES
+SEARCH_STATUSES = ("open", "in_progress", "resolved")
+SEARCH_PRIORITIES = ("critical", "high", "medium", "low")
+
+
+def _normalize_search_filter(value, allowed, label):
+    """Normalize an optional exact-match filter, accepting any letter case."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return None
+    if isinstance(value, str):
+        candidate = value.strip().casefold()
+        for option in allowed:
+            if candidate == option.casefold():
+                return option
+    choices = ", ".join(allowed)
+    raise ValueError(f"Invalid {label} filter '{value}'. Choose one of: {choices}.")
+
+
+def search_tickets(tickets, title_query="", category=None, status=None, priority=None):
+    """Search title substrings and apply optional category/status/priority filters.
+
+    Matching is case-insensitive (Unicode-aware via casefold). All supplied
+    filters are combined with AND semantics. Empty filters impose no restriction.
+    This function only reads ticket data and never mutates it.
+    """
+    if title_query is None:
+        title_query = ""
+    if not isinstance(title_query, str):
+        raise ValueError("Title search must be text.")
+
+    category = _normalize_search_filter(category, SEARCH_CATEGORIES, "category")
+    status = _normalize_search_filter(status, SEARCH_STATUSES, "status")
+    priority = _normalize_search_filter(priority, SEARCH_PRIORITIES, "priority")
+    needle = title_query.strip().casefold()
+
+    return [
+        ticket
+        for ticket in tickets
+        if (not needle or needle in str(ticket.get("title", "")).casefold())
+        and (category is None or str(ticket.get("category", "")).casefold() == category.casefold())
+        and (status is None or str(ticket.get("status", "")).casefold() == status.casefold())
+        and (priority is None or str(ticket.get("priority", "")).casefold() == priority.casefold())
+    ]
+
+
+def sort_tickets_by_priority(tickets):
+    """Return a new list ordered critical, high, medium, low, then numeric ID."""
+    priority_rank = {priority: index for index, priority in enumerate(SEARCH_PRIORITIES)}
+
+    def sort_key(ticket):
+        priority = str(ticket.get("priority", "")).casefold()
+        ticket_id = str(ticket.get("id", ""))
+        match = _ID_PATTERN.match(ticket_id)
+        numeric_id = int(match.group(1)) if match else float("inf")
+        return (priority_rank.get(priority, len(priority_rank)), numeric_id, ticket_id)
+
+    return sorted(tickets, key=sort_key)
+
+
+def format_search_results(tickets):
+    """Format the requested read-only search result columns."""
+    if not tickets:
+        return "No matching tickets found."
+    headers = ("ID", "Title", "Category", "Priority", "Status", "Assignee")
+    rows = [
+        (
+            str(ticket.get("id", "")),
+            str(ticket.get("title", "")),
+            str(ticket.get("category", "")),
+            str(ticket.get("priority", "")),
+            str(ticket.get("status", "")),
+            str(ticket.get("assigned_to") or "unassigned"),
+        )
+        for ticket in tickets
+    ]
+    widths = [max(len(headers[i]), *(len(row[i]) for row in rows)) for i in range(len(headers))]
+    lines = [" | ".join(headers[i].ljust(widths[i]) for i in range(len(headers)))]
+    lines.append("-+-".join("-" * width for width in widths))
+    lines.extend(" | ".join(row[i].ljust(widths[i]) for i in range(len(headers))) for row in rows)
+    return "\n".join(lines)
