@@ -115,6 +115,19 @@ class TestFindTicket(unittest.TestCase):
         with self.assertRaises(ValueError):
             find_ticket([make_ticket()], "  ")
 
+    def test_ticket_id_with_whitespace_is_normalized(self):
+        ticket = find_ticket([make_ticket()], " T001 ")
+        self.assertEqual(ticket["id"], "T001")
+
+    def test_ticket_id_with_invalid_format_is_rejected(self):
+        tickets = [make_ticket()]
+        invalid_ids = ("", "T", "ABC", "T-1")
+
+        for ticket_id in invalid_ids:
+            with self.subTest(ticket_id=ticket_id):
+                with self.assertRaises(ValueError):
+                    find_ticket(tickets, ticket_id)
+
 
 if __name__ == "__main__":
     unittest.main()
