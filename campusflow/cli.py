@@ -22,6 +22,7 @@ from campusflow.tickets import (
 from campusflow.notes import add_note
 from campusflow.work_queue import get_work_queue
 from campusflow.workflow import change_status, find_ticket, reopen_ticket
+from campusflow.engineering_check import run_engineering_check
 
 MENU = """
 === CampusFlow ===
@@ -36,6 +37,7 @@ MENU = """
 9. Add follow-up note
 10. Search tickets
 11. Search tickets (priority sorted)
+12. Engineering Understanding Check
 0. Exit"""
 
 
@@ -161,6 +163,10 @@ def _handle(choice, tickets, input_fn, print_fn):
         if choice == "11":
             matches = sort_tickets_by_priority(matches)
         print_fn(format_search_results(matches))
+        return False
+
+    if choice == "12":
+        run_engineering_check(input_fn=input_fn, print_fn=print_fn)
         return False
 
     print_fn("Invalid choice. Enter a number from the menu.")
