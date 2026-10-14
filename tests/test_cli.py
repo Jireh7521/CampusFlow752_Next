@@ -102,6 +102,21 @@ class TestCli(unittest.TestCase):
         self.assertIn("T001 reopened.", out)
         self.assertIn("T001 assigned to Bola.", out)
 
+    def test_add_follow_up_note_is_saved_and_shown_in_ticket_view(self):
+        _, out = drive(
+            [
+                "1", "Wi-Fi issue", "network", "high", "5",
+                "9", "T001", "Amina", "Checked the router.",
+                "3", "T001",
+                "0",
+            ],
+            self.path,
+        )
+        self.assertIn("Added note to T001.", out)
+        self.assertIn("N001 | Amina: Checked the router.", out)
+        saved = load_tickets(self.path)
+        self.assertEqual(saved[0]["notes"][0]["note_id"], "N001")
+
     def test_exit_on_closed_input(self):
         code, _ = drive([], self.path)
         self.assertEqual(code, 0)
