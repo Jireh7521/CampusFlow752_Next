@@ -27,6 +27,7 @@ MENU = """
 6. Reopen resolved ticket
 7. Work queue
 8. Report
+9. Add follow-up note
 0. Exit"""
 
 
