@@ -48,23 +48,23 @@ def normalize_urgency(urgency):
 
 
 def validate_affected_users(value):
-    """Return a positive int. Rejects 0, negatives, decimals, text and bools.
-
-    Accepts a real int, or a string of digits such as '15' (what the CLI gets
-    from input()).
-    """
+    """Return a positive int; reject booleans, floats, strings and non-positive values."""
     message = "Affected users must be a positive whole number (1 or more)."
-    if isinstance(value, bool):
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         raise ValueError(message)
-    if isinstance(value, int):
-        number = value
-    elif isinstance(value, str) and value.strip().isdigit():
+    return value
+
+
+def parse_affected_users_input(value):
+    """Convert raw CLI text to an integer, then apply the shared validation."""
+    message = "Affected users must be a positive whole number (1 or more)."
+    if not isinstance(value, str):
+        raise ValueError(message)
+    try:
         number = int(value.strip())
-    else:
-        raise ValueError(message)
-    if number < 1:
-        raise ValueError(message)
-    return number
+    except ValueError:
+        raise ValueError(message) from None
+    return validate_affected_users(number)
 
 
 # ---------- priority engine ----------
