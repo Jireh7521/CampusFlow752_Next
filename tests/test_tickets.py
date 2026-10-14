@@ -106,6 +106,7 @@ class TestCreateTicket(unittest.TestCase):
                 "priority": "critical",
                 "status": "open",
                 "assigned_to": None,
+                "notes": [],
             },
         )
         self.assertEqual(tickets, [ticket])
