@@ -117,6 +117,53 @@ class TestCli(unittest.TestCase):
         saved = load_tickets(self.path)
         self.assertEqual(saved[0]["notes"][0]["note_id"], "N001")
 
+    def test_search_tickets_from_menu(self):
+        _, out = drive(
+            [
+                "1", "Campus Wi-Fi is down", "network", "high", "15",
+                "10", "campus", "", "", "",
+                "0",
+            ],
+            self.path,
+        )
+        self.assertIn("T001", out)
+        self.assertIn("Campus Wi-Fi is down", out)
+        self.assertIn("Search tickets", out)
+
+
+    def test_search_reprompts_after_invalid_filter_and_shows_columns(self):
+        _, out = drive(
+            [
+                "1", "Campus Wi-Fi is down", "network", "high", "15",
+                "10", "campus", "plumbing", "NETWORK", "", "",
+                "0",
+            ],
+            self.path,
+        )
+        self.assertIn("Invalid category filter", out)
+        self.assertIn("ID", out)
+        self.assertIn("Title", out)
+        self.assertIn("Category", out)
+        self.assertIn("Priority", out)
+        self.assertIn("Status", out)
+        self.assertIn("Assignee", out)
+        self.assertIn("Campus Wi-Fi is down", out)
+
+    def test_priority_sorted_search_is_separate_from_work_queue(self):
+        _, out = drive(
+            [
+                "1", "First low priority", "other", "low", "1",
+                "1", "Second critical priority", "network", "high", "15",
+                "11", "", "", "", "",
+                "7",
+                "0",
+            ],
+            self.path,
+        )
+        self.assertIn("11. Search tickets (priority sorted)", out)
+        self.assertIn("7. Work queue", out)
+        self.assertLess(out.index("T002 | Second critical priority"), out.index("T001 | First low priority"))
+
     def test_exit_on_closed_input(self):
         code, _ = drive([], self.path)
         self.assertEqual(code, 0)

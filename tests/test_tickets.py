@@ -106,6 +106,7 @@ class TestCreateTicket(unittest.TestCase):
                 "priority": "critical",
                 "status": "open",
                 "assigned_to": None,
+                "notes": [],
             },
         )
         self.assertEqual(tickets, [ticket])
@@ -158,6 +159,67 @@ class TestFormatting(unittest.TestCase):
         self.assertIn("Campus Wi-Fi is down", format_ticket(tickets[0]))
         self.assertIn("(unassigned)", format_ticket(tickets[0]))
         self.assertIn("T001", format_ticket_list(tickets))
+
+class TestSearchTickets(unittest.TestCase):
+    def setUp(self):
+        self.tickets = []
+        new_ticket(self.tickets, title="Campus Wi-Fi is down", category="Network")
+        new_ticket(self.tickets, title="Printer is jammed", category="Hardware", urgency="low", affected_users=1)
+        new_ticket(self.tickets, title="Software login issue", category="Software", urgency="medium", affected_users=1)
+        assign_ticket(self.tickets, "T002", "Amina")
+        self.tickets[2]["status"] = "in_progress"
+
+    def test_title_substring_is_case_insensitive(self):
+        results = search_tickets(self.tickets, title_query="CAMPUS")
+        self.assertEqual([ticket["id"] for ticket in results], ["T001"])
+
+    def test_title_search_uses_casefold(self):
+        tickets = [{"id": "T010", "title": "Straße access", "category": "Other",
+                    "priority": "low", "status": "open", "assigned_to": None}]
+        self.assertEqual(search_tickets(tickets, "STRASSE")[0]["id"], "T010")
+
+    def test_combined_filters_use_and_semantics(self):
+        results = search_tickets(
+            self.tickets, title_query="issue", category="software",
+            status="IN_PROGRESS", priority="medium"
+        )
+        self.assertEqual([ticket["id"] for ticket in results], ["T003"])
+        self.assertEqual(
+            search_tickets(self.tickets, title_query="issue", category="Hardware"), []
+        )
+
+    def test_empty_filters_do_not_restrict_results(self):
+        self.assertEqual(search_tickets(self.tickets), self.tickets)
+        self.assertEqual(
+            search_tickets(self.tickets, title_query=" ", category="", status=None, priority=""),
+            self.tickets,
+        )
+
+    def test_search_does_not_mutate_ticket_data(self):
+        import copy
+        before = copy.deepcopy(self.tickets)
+        search_tickets(self.tickets, "campus", category="Network", status="open", priority="critical")
+        self.assertEqual(self.tickets, before)
+
+    def test_invalid_optional_filter_is_rejected(self):
+        for kwargs in ({"category": "Plumbing"}, {"status": "waiting"}, {"priority": "urgent"}):
+            with self.subTest(kwargs=kwargs):
+                with self.assertRaises(ValueError):
+                    search_tickets(self.tickets, **kwargs)
+
+    def test_priority_sort_uses_priority_then_numeric_ticket_id(self):
+        from campusflow.tickets import sort_tickets_by_priority
+        tickets = [
+            {"id": "T010", "priority": "high"},
+            {"id": "T002", "priority": "critical"},
+            {"id": "T001", "priority": "high"},
+            {"id": "T003", "priority": "low"},
+        ]
+        self.assertEqual(
+            [ticket["id"] for ticket in sort_tickets_by_priority(tickets)],
+            ["T002", "T001", "T010", "T003"],
+        )
+        self.assertEqual([ticket["id"] for ticket in tickets], ["T010", "T002", "T001", "T003"])
 
 
 if __name__ == "__main__":
