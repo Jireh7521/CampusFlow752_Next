@@ -11,6 +11,7 @@ from campusflow.tickets import (
     create_ticket,
     format_ticket,
     format_ticket_list,
+    parse_affected_users_input,
 )
 from campusflow.work_queue import get_work_queue
 from campusflow.workflow import change_status, find_ticket, reopen_ticket
@@ -69,7 +70,7 @@ def _handle(choice, tickets, input_fn, print_fn):
             input_fn("Title: "),
             input_fn("Category (Network/Hardware/Software/Other): "),
             input_fn("Urgency (low/medium/high): "),
-            input_fn("Affected users: "),
+            parse_affected_users_input(input_fn("Affected users: ")),
         )
         print_fn(
             f"Created {ticket['id']} with priority '{ticket['priority']}'."
