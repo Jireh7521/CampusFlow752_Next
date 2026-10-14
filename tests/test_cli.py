@@ -72,7 +72,7 @@ class TestCli(unittest.TestCase):
             self.assertEqual(handle.read(), "not json at all")
 
     def test_invalid_menu_choice_and_empty_views(self):
-        _, out = drive(["9", "2", "7", "8", "0"], self.path)
+        _, out = drive(["99", "2", "7", "8", "0"], self.path)
         self.assertIn("Invalid choice", out)
         self.assertIn("No tickets yet.", out)
         self.assertIn("The work queue is empty.", out)
