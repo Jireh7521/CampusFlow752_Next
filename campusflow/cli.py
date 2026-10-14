@@ -13,6 +13,7 @@ from campusflow.tickets import (
     format_ticket_list,
     parse_affected_users_input,
 )
+from campusflow.notes import add_note
 from campusflow.work_queue import get_work_queue
 from campusflow.workflow import change_status, find_ticket, reopen_ticket
 
@@ -26,6 +27,7 @@ MENU = """
 6. Reopen resolved ticket
 7. Work queue
 8. Report
+9. Add follow-up note
 0. Exit"""
 
 
@@ -117,6 +119,16 @@ def _handle(choice, tickets, input_fn, print_fn):
     if choice == "8":
         print_fn(format_report(build_report(tickets)))
         return False
+
+    if choice == "9":
+        ticket = add_note(
+            tickets,
+            input_fn("Ticket ID: "),
+            input_fn("Author: "),
+            input_fn("Follow-up message: "),
+        )
+        print_fn(f"Added note to {ticket['id']}.")
+        return True
 
     print_fn("Invalid choice. Enter a number from the menu.")
     return False

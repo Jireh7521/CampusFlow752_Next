@@ -127,6 +127,7 @@ def create_ticket(tickets, title, category, urgency, affected_users):
         "priority": calculate_priority(urgency, users),
         "status": "open",
         "assigned_to": None,
+        "notes": [],
     }
     tickets.append(ticket)
     return ticket
@@ -162,8 +163,23 @@ def format_ticket(ticket):
             f"Priority:       {ticket['priority']}",
             f"Status:         {ticket['status']}",
             f"Assigned to:    {assignee}",
+            format_ticket_notes(ticket),
         ]
     )
+
+
+def format_ticket_notes(ticket):
+    """Format follow-up notes in numeric note ID order."""
+    notes = ticket.get("notes", [])
+    if not notes:
+        return "Follow-up notes: none"
+    ordered = sorted(notes, key=lambda note: int(note["note_id"][1:]))
+    lines = ["Follow-up notes:"]
+    for note in ordered:
+        lines.append(
+            f"  {note['note_id']} | {note['author']}: {note['message']}"
+        )
+    return "\n".join(lines)
 
 
 def format_ticket_list(tickets):

@@ -72,7 +72,7 @@ class TestCli(unittest.TestCase):
             self.assertEqual(handle.read(), "not json at all")
 
     def test_invalid_menu_choice_and_empty_views(self):
-        _, out = drive(["9", "2", "7", "8", "0"], self.path)
+        _, out = drive(["99", "2", "7", "8", "0"], self.path)
         self.assertIn("Invalid choice", out)
         self.assertIn("No tickets yet.", out)
         self.assertIn("The work queue is empty.", out)
@@ -101,6 +101,21 @@ class TestCli(unittest.TestCase):
         self.assertIn("is resolved and cannot be modified", out)
         self.assertIn("T001 reopened.", out)
         self.assertIn("T001 assigned to Bola.", out)
+
+    def test_add_follow_up_note_is_saved_and_shown_in_ticket_view(self):
+        _, out = drive(
+            [
+                "1", "Wi-Fi issue", "network", "high", "5",
+                "9", "T001", "Amina", "Checked the router.",
+                "3", "T001",
+                "0",
+            ],
+            self.path,
+        )
+        self.assertIn("Added note to T001.", out)
+        self.assertIn("N001 | Amina: Checked the router.", out)
+        saved = load_tickets(self.path)
+        self.assertEqual(saved[0]["notes"][0]["note_id"], "N001")
 
     def test_exit_on_closed_input(self):
         code, _ = drive([], self.path)
