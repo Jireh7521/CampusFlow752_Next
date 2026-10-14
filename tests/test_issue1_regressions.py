@@ -80,6 +80,13 @@ class TestFailedActionsPreserveCompleteState(unittest.TestCase):
             change_status(tickets, "T001", "in_progress")
         self.assertEqual(tickets, before)
 
+    def test_blank_assignment_name_preserves_entire_collection(self):
+        tickets = [ticket(assigned_to="Amina")]
+        before = copy.deepcopy(tickets)
+        with self.assertRaises(ValueError):
+            assign_ticket(tickets, "T001", "   ")
+        self.assertEqual(tickets, before)
+
     def test_malformed_id_during_assignment_preserves_collection(self):
         tickets = [ticket()]
         before = copy.deepcopy(tickets)
