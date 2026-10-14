@@ -72,6 +72,36 @@ def _check_shape(data, path):
         if ticket_id in seen_ids:
             raise StorageError(f"Duplicate ticket ID in '{path}': {ticket_id}.")
         seen_ids.add(ticket_id)
+
+        # Older saved tickets predate follow-up notes; migrate them in memory.
+        ticket.setdefault("notes", [])
+        notes = ticket["notes"]
+        if not isinstance(notes, list):
+            raise StorageError(f"Ticket {ticket_id} notes must be a list.")
+        seen_note_ids = set()
+        for note in notes:
+            if not isinstance(note, dict) or not all(
+                key in note for key in ("note_id", "author", "message")
+            ):
+                raise StorageError(
+                    f"Ticket {ticket_id} contains a malformed follow-up note."
+                )
+            note_id = note["note_id"]
+            author = note["author"]
+            message = note["message"]
+            if (
+                not isinstance(note_id, str)
+                or not re.fullmatch(r"N\d+", note_id)
+                or note_id in seen_note_ids
+                or not isinstance(author, str)
+                or not author.strip()
+                or not isinstance(message, str)
+                or not 5 <= len(message.strip()) <= 300
+            ):
+                raise StorageError(
+                    f"Ticket {ticket_id} contains an invalid follow-up note."
+                )
+            seen_note_ids.add(note_id)
     return data
 
 
