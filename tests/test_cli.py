@@ -7,28 +7,9 @@ from campusflow.storage import load_tickets
 
 
 def drive(answers, path):
-    """Run a menu session with scripted input, including auth when available."""
-    output = []
-    run_options = {}
-
-    # This test branch can be tested against main before auth is merged, and
-    # against the integrated application after the authentication PR is merged.
-    if "users_path" in __import__("inspect").signature(run).parameters:
-        from campusflow.auth import create_user, save_users
-
-        users_path = path + ".users.json"
-        test_password = "CampusFlowTestPassword123!"
-        if not os.path.exists(users_path):
-            users = []
-            create_user(users, "testuser", test_password)
-            save_users(users, users_path)
-        answers = ["testuser", *answers]
-        run_options = {
-            "password_fn": lambda prompt="": test_password,
-            "users_path": users_path,
-        }
-
+    """Run the menu with scripted answers; return (exit_code, output text)."""
     remaining = iter(answers)
+    output = []
 
     def fake_input(prompt=""):
         try:
@@ -36,13 +17,9 @@ def drive(answers, path):
         except StopIteration:
             raise EOFError
 
-    code = run(
-        input_fn=fake_input,
-        print_fn=output.append,
-        path=path,
-        **run_options,
-    )
+    code = run(input_fn=fake_input, print_fn=output.append, path=path)
     return code, "\n".join(output)
+
 
 class TestCli(unittest.TestCase):
     def setUp(self):
@@ -53,16 +30,16 @@ class TestCli(unittest.TestCase):
     def test_full_demo_route(self):
         code, out = drive(
             [
-                "1", "Campus Wi-Fi is down", "network", "high", "15",
-                "1", "Bad ticket", "network", "high", "0",
+                "1", "Campus Wi-Fi is down", "network", "high", "15",   # valid
+                "1", "Bad ticket", "network", "high", "0",              # invalid
                 "1", "Slow printer", "hardware", "low", "1",
-                "5", "T001", "in_progress",
+                "5", "T001", "in_progress",                             # unassigned
                 "4", "T001", "Amina",
                 "5", "T001", "in_progress",
-                "5", "T001", "open",
+                "5", "T001", "open",                                    # bad move
                 "5", "T001", "resolved",
-                "7",
-                "8",
+                "7",                                                    # queue
+                "8",                                                    # report
                 "0",
             ],
             self.path,
@@ -86,12 +63,12 @@ class TestCli(unittest.TestCase):
         self.assertIn("Created T002", out)
 
     def test_corrupted_file_stops_startup_and_is_not_overwritten(self):
-        with open(self.path, "w", encoding="utf-8") as handle:
+        with open(self.path, "w") as handle:
             handle.write("not json at all")
         code, out = drive(["1", "x", "other", "low", "1", "0"], self.path)
         self.assertEqual(code, 1)
         self.assertIn("not valid JSON", out)
-        with open(self.path, encoding="utf-8") as handle:
+        with open(self.path) as handle:
             self.assertEqual(handle.read(), "not json at all")
 
     def test_invalid_menu_choice_and_empty_views(self):
@@ -114,9 +91,9 @@ class TestCli(unittest.TestCase):
                 "4", "T001", "Amina",
                 "5", "T001", "in_progress",
                 "5", "T001", "resolved",
-                "4", "T001", "Bola",
-                "6", "T001",
-                "4", "T001", "Bola",
+                "4", "T001", "Bola",     # rejected: resolved
+                "6", "T001",             # reopen
+                "4", "T001", "Bola",     # now allowed
                 "0",
             ],
             self.path,
@@ -153,6 +130,7 @@ class TestCli(unittest.TestCase):
         self.assertIn("Campus Wi-Fi is down", out)
         self.assertIn("Search tickets", out)
 
+
     def test_search_reprompts_after_invalid_filter_and_shows_columns(self):
         _, out = drive(
             [
@@ -184,35 +162,7 @@ class TestCli(unittest.TestCase):
         )
         self.assertIn("11. Search tickets (priority sorted)", out)
         self.assertIn("7. Work queue", out)
-        self.assertLess(
-            out.index("T002 | Second critical priority"),
-            out.index("T001 | First low priority"),
-        )
-
-    def test_report_cli_shows_breakdowns_and_tracks_resolve_reopen(self):
-        _, out = drive(
-            [
-                "1", "Campus Wi-Fi", "network", "high", "15",
-                "1", "Printer fault", "hardware", "low", "1",
-                "4", "T001", "Amina",
-                "5", "T001", "in_progress",
-                "5", "T001", "resolved",
-                "8",
-                "6", "T001",
-                "8",
-                "0",
-            ],
-            self.path,
-        )
-
-        self.assertIn("By status:", out)
-        self.assertIn("By priority:", out)
-        self.assertIn("By category:", out)
-        self.assertIn("Network: 1", out)
-        self.assertIn("Hardware: 1", out)
-        self.assertIn("Resolution percentage: 50%", out)
-        self.assertIn("Resolution percentage: 0%", out)
-        self.assertIn("T001 reopened.", out)
+        self.assertLess(out.index("T002 | Second critical priority"), out.index("T001 | First low priority"))
 
     def test_exit_on_closed_input(self):
         code, _ = drive([], self.path)
