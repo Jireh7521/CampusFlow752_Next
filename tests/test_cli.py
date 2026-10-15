@@ -42,7 +42,7 @@ def drive(answers, path):
         path=path,
         **run_options,
     )
-    return code, "\\n".join(output)
+    return code, "\n".join(output)
 
 class TestCli(unittest.TestCase):
     def setUp(self):
