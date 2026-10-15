@@ -101,6 +101,23 @@ class TestFollowUpNotes(unittest.TestCase):
             loaded = load_tickets(path)
         self.assertEqual(loaded[0]["notes"], [])
 
+    def test_malformed_existing_note_is_rejected_without_mutation(self):
+        malformed_notes = [
+            [{"note_id": "broken", "author": "Amina", "message": "Valid message"}],
+            [
+                {"note_id": "N001", "author": "Amina", "message": "First message"},
+                {"note_id": "N1", "author": "Bola", "message": "Second message"},
+            ],
+        ]
+        for notes in malformed_notes:
+            with self.subTest(notes=notes):
+                tickets = make_ticket()
+                tickets[0]["notes"] = copy.deepcopy(notes)
+                before = copy.deepcopy(tickets)
+                with self.assertRaises(ValueError):
+                    add_note(tickets, "T001", "Bola", "Another valid message")
+                self.assertEqual(tickets, before)
+
     def test_malformed_and_duplicate_persisted_notes_are_rejected(self):
         malformed_notes = [
             [{"note_id": "N001", "author": "Amina"}],
