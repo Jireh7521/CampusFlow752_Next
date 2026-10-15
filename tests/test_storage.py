@@ -164,6 +164,27 @@ class TestStorage(unittest.TestCase):
             self.assertEqual(handle.read(), original_contents)
         self.assertFalse(os.path.exists(self.path + ".tmp"))
 
+
+    def test_failed_partial_json_write_preserves_saved_file_and_cleans_temp_file(self):
+        save_tickets(make_tickets(), self.path)
+        with open(self.path, encoding="utf-8") as handle:
+            original_contents = handle.read()
+
+        def write_partial_json_then_fail(tickets, handle, indent=None):
+            handle.write('{"partial":')
+            raise OSError("simulated temporary-file write failure")
+
+        with patch(
+            "campusflow.storage.json.dump",
+            side_effect=write_partial_json_then_fail,
+        ):
+            with self.assertRaisesRegex(OSError, "simulated temporary-file write failure"):
+                save_tickets(make_tickets(), self.path)
+
+        with open(self.path, encoding="utf-8") as handle:
+            self.assertEqual(handle.read(), original_contents)
+        self.assertFalse(os.path.exists(self.path + ".tmp"))
+
     def test_failed_json_write_preserves_saved_file_and_cleans_temp_file(self):
         save_tickets(make_tickets(), self.path)
         with open(self.path, encoding="utf-8") as handle:
