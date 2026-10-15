@@ -50,12 +50,34 @@ class TestEngineeringCheckScoring(unittest.TestCase):
             return next(answers)
 
         score = run_engineering_check(input_fn=fake_input, print_fn=output.append)
-        text = "\n".join(output)
+        rendered = "\n".join(output)
         self.assertEqual(score, 6)
-        self.assertIn("Invalid answer", text)
-        self.assertIn("Final score: 6/6", text)
-        self.assertIn("Question 1: The storage loader", text)
-        self.assertIn("Question 2: change_status", text)
+        self.assertIn("Invalid answer", rendered)
+        self.assertIn("Final score: 6/6", rendered)
+        self.assertIn("Question 1: The storage loader", rendered)
+        self.assertIn("Question 2: change_status", rendered)
+
+    def test_blank_explanations_are_reprompted_and_trimmed(self):
+        answers = iter([
+            *[question["answer"] for question in QUESTION_BANK],
+            "   ",
+            "  StorageError protects the JSON file.  ",
+            "",
+            "  Status rules reject unassigned tickets.  ",
+        ])
+        output = []
+
+        def fake_input(_prompt=""):
+            return next(answers)
+
+        score = run_engineering_check(input_fn=fake_input, print_fn=output.append)
+        rendered = "\n".join(output)
+
+        self.assertEqual(score, 6)
+        self.assertEqual(rendered.count("Please enter an explanation"), 2)
+        self.assertIn("Question 1: StorageError protects the JSON file.", rendered)
+        self.assertIn("Question 2: Status rules reject unassigned tickets.", rendered)
+        self.assertNotIn("Question 1:    ", rendered)
 
 
 if __name__ == "__main__":
