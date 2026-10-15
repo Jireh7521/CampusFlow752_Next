@@ -52,7 +52,7 @@ def load_tickets(path=DEFAULT_PATH):
     try:
         with open(path, "r", encoding="utf-8") as handle:
             data = json.load(handle)
-    except json.JSONDecodeError as error:
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise StorageError(
             f"Tickets file '{path}' is not valid JSON ({error}). "
             "It was NOT changed. Fix it or move it aside to start fresh."
