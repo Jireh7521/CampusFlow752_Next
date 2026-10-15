@@ -25,9 +25,10 @@ Do not claim work or reviews that have not been completed.
 - Standard library only; no third-party runtime dependencies.
 
 ```bash
-git clone <repository-url>
-cd <repository-folder>
-python main.py
+git clone https://github.com/Jireh7521/CampusFlow752_Next.git
+cd CampusFlow752_Next
+python3 -m unittest discover -s tests -v
+python3 main.py
 ```
 
 ## Menu
@@ -97,8 +98,7 @@ has been reopened. Notes and note-ID continuity are preserved when tickets are s
   Ties are sorted by the numeric portion of the ticket ID. Other statuses are excluded.
 - Search supports a title query and optional category, status, and priority filters. Filters are
   combined, and a separate menu option sorts search results by priority.
-- Reports show total ticket count and counts by every status and priority, including zero counts.
-  Empty reports are supported.
+- Reports show total ticket count; counts by every status, priority, and category (including zero-count values); unresolved and resolved totals; and the resolution percentage based on each ticket's current status. Empty reports show zero counts and a 0% resolution percentage.
 
 ## Engineering Understanding Check
 
@@ -122,6 +122,42 @@ Tickets are saved to `data/tickets.json` after each successful change and loaded
   the unreadable file.
 - Ticket IDs continue from the highest existing ID after reload.
 - The local data file is ignored by Git.
+
+### Supported JSON format
+
+The file is a JSON array (list) of ticket objects, not a wrapper object. Each ticket stores its
+ID, title, canonical category and urgency, affected-user count, calculated priority, status,
+assignee (`null` when unassigned), and a list of follow-up notes. Older tickets may omit `notes`;
+loading them supplies an empty list in memory.
+
+```json
+[
+  {
+    "id": "T001",
+    "title": "Campus Wi-Fi is down",
+    "category": "Network",
+    "urgency": "high",
+    "affected_users": 15,
+    "priority": "critical",
+    "status": "open",
+    "assigned_to": null,
+    "notes": [
+      {
+        "note_id": "N001",
+        "author": "Amina",
+        "message": "Checked the router."
+      }
+    ]
+  }
+]
+```
+
+Ticket IDs must be unique strings in `T`-plus-digits form. Categories are `Network`, `Hardware`,
+`Software`, or `Other`; urgency is `low`, `medium`, or `high`; status is `open`, `in_progress`, or
+`resolved`. `affected_users` must be a positive integer (not a boolean or decimal), and `priority`
+must match the priority rules above. Each note needs a unique per-ticket `note_id` in `N`-plus-digits
+form, a nonblank author, and a 5–300 character message. Invalid or inconsistent records are rejected
+rather than silently corrected.
 
 ## Running the tests
 
