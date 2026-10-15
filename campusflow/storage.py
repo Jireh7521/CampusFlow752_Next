@@ -8,6 +8,7 @@
   mid-write cannot leave a half-written tickets file.
 """
 
+import copy
 import json
 import os
 import re
@@ -70,8 +71,11 @@ def _check_shape(data, path):
             "It was NOT changed."
         )
 
+    # Legacy-note migration mutates records, so validate a deep copy. If any
+    # later record is invalid, the caller's original collection stays intact.
+    validated_data = copy.deepcopy(data)
     seen_ids = set()
-    for index, ticket in enumerate(data, start=1):
+    for index, ticket in enumerate(validated_data, start=1):
         if not isinstance(ticket, dict):
             raise StorageError(f"Ticket #{index} in '{path}' is not an object.")
 
@@ -157,7 +161,7 @@ def _check_shape(data, path):
                 )
             seen_note_ids.add(note_id)
 
-    return data
+    return validated_data
 
 
 def save_tickets(tickets, path=DEFAULT_PATH):
