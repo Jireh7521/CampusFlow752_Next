@@ -1,9 +1,20 @@
 """Text menu for CampusFlow.
 
 run() takes input_fn / print_fn so tests can drive the whole menu with
-scripted answers instead of a real keyboard.
+scripted answers instead of a real keyboard. Password entry is injected
+separately because real terminals should not echo passwords.
 """
 
+from getpass import getpass
+
+from campusflow.auth import (
+    DEFAULT_USERS_PATH,
+    AuthenticationError,
+    authenticate,
+    create_user,
+    load_users,
+    save_users,
+)
 from campusflow.reports import build_report, format_report
 from campusflow.storage import DEFAULT_PATH, StorageError, load_tickets, save_tickets
 from campusflow.tickets import (
@@ -41,8 +52,69 @@ MENU = """
 0. Exit"""
 
 
-def run(input_fn=input, print_fn=print, path=DEFAULT_PATH):
-    """Run the menu until Exit. Returns 0 on normal exit, 1 if data is unsafe."""
+def _login_or_setup(input_fn, print_fn, password_fn, users_path):
+    """Create the first local account or authenticate an existing account."""
+    try:
+        users = load_users(users_path)
+    except AuthenticationError as error:
+        print_fn(f"Authentication error: {error}")
+        return None
+    except OSError as error:
+        print_fn(f"Authentication error: could not read accounts: {error}")
+        return None
+
+    if not users:
+        print_fn("No CampusFlow account exists. Create the first account.")
+        try:
+            username = input_fn("New username: ").strip()
+            password = password_fn("New password (input is hidden): ")
+            confirmation = password_fn("Confirm password: ")
+        except EOFError:
+            print_fn("\nInput closed. Account setup cancelled.")
+            return None
+        if password != confirmation:
+            print_fn("Passwords do not match. Run CampusFlow again to retry setup.")
+            return None
+        try:
+            create_user(users, username, password)
+            save_users(users, users_path)
+        except (ValueError, OSError) as error:
+            print_fn(f"Could not create account: {error}")
+            return None
+        print_fn(f"Account created. Signed in as {users[0]['username']}.")
+        return users[0]["username"]
+
+    for attempt in range(3):
+        try:
+            username = input_fn("Username: ")
+            password = password_fn("Password (input is hidden): ")
+        except EOFError:
+            print_fn("\nInput closed. Login cancelled.")
+            return None
+        try:
+            signed_in_as = authenticate(users, username, password)
+        except ValueError:
+            print_fn("Invalid username or password.")
+            continue
+        print_fn(f"Signed in as {signed_in_as}.")
+        return signed_in_as
+
+    print_fn("Too many failed login attempts. Restart CampusFlow to try again.")
+    return None
+
+
+def run(
+    input_fn=input,
+    print_fn=print,
+    path=DEFAULT_PATH,
+    password_fn=getpass,
+    users_path=DEFAULT_USERS_PATH,
+):
+    """Authenticate, then run the menu. Returns 1 if startup cannot be trusted."""
+    username = _login_or_setup(input_fn, print_fn, password_fn, users_path)
+    if username is None:
+        return 1
+
     try:
         tickets = load_tickets(path)
     except StorageError as error:
@@ -74,7 +146,6 @@ def run(input_fn=input, print_fn=print, path=DEFAULT_PATH):
             print_fn(f"Error: could not save tickets: {error}")
 
 
-
 def _prompt_optional_filter(label, choices, input_fn, print_fn):
     """Prompt until a valid optional filter is entered; blank means no filter."""
     options = ", ".join(choices)
@@ -98,9 +169,7 @@ def _handle(choice, tickets, input_fn, print_fn):
             input_fn("Urgency (low/medium/high): "),
             parse_affected_users_input(input_fn("Affected users: ")),
         )
-        print_fn(
-            f"Created {ticket['id']} with priority '{ticket['priority']}'."
-        )
+        print_fn(f"Created {ticket['id']} with priority '{ticket['priority']}'.")
         return True
 
     if choice == "2":
@@ -159,7 +228,13 @@ def _handle(choice, tickets, input_fn, print_fn):
         category = _prompt_optional_filter("Category", SEARCH_CATEGORIES, input_fn, print_fn)
         status = _prompt_optional_filter("Status", SEARCH_STATUSES, input_fn, print_fn)
         priority = _prompt_optional_filter("Priority", SEARCH_PRIORITIES, input_fn, print_fn)
-        matches = search_tickets(tickets, title_query=title_query, category=category, status=status, priority=priority)
+        matches = search_tickets(
+            tickets,
+            title_query=title_query,
+            category=category,
+            status=status,
+            priority=priority,
+        )
         if choice == "11":
             matches = sort_tickets_by_priority(matches)
         print_fn(format_search_results(matches))

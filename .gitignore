@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Local account and ticket data (never commit credentials or private tickets)
+data/*.json
+data/*.json.tmp
+
 # Virtual environments
 .venv/
 venv/
