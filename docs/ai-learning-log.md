@@ -93,7 +93,7 @@ Is 5.0 an integer? False
 tickets = [("high", "T10"), ("high", "T2")]
 print("String sorting:")
 print(sorted(tickets, key=lambda ticket: (ticket[0], ticket[1])))
-print("\\nNumeric ticket-ID sorting:")
+print("\nNumeric ticket-ID sorting:")
 print(sorted(tickets, key=lambda ticket: (ticket[0], int(ticket[1][1:]))))
 ```
 
