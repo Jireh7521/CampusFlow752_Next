@@ -66,7 +66,7 @@ class TestAuthentication(unittest.TestCase):
             self.assertEqual(handle.read(), "{not valid json")
 
     def test_invalid_utf8_account_file_is_rejected_without_overwrite(self):
-        invalid_bytes = b"\\xff\\xfe"
+        invalid_bytes = b"\xff\xfe"
         with open(self.path, "wb") as handle:
             handle.write(invalid_bytes)
 
