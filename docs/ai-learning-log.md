@@ -134,10 +134,32 @@ Numeric ticket-ID sorting:
 
 ---
 
-## Fellow: ______
+## Fellow: Jireh Samuel (Engineer A)
 
-### Interaction #1 —
+### Interaction #1 — Note validation and preventing partial mutation
 
-### Interaction #2 —
+**Problem:** Understand why malformed notes already stored on a ticket should be rejected before appending a new note, rather than allowing the operation to leave the ticket partly changed.
 
-### Interaction #3 — (include the one where you changed or rejected AI advice)
+**My initial understanding:** I understood this as a data-integrity and safety practice: invalid existing note data should not cause the ticket itself to be modified.
+
+**Prompt to AI:** “For CampusFlow Issue #9, my actual learning topic is: note validation. My recollection: When processing note validation in a ticketing or database system, rejecting malformed existing notes without modifying the ticket itself is a critical safety and data integrity practice.. Help me develop honest learning-log entries based on real interactions and verifiable evidence; do not invent past prompts, experiments, or results.”
+
+**Useful AI guidance:** Validate the existing note collection and each note's required fields before appending anything. A regression test should take a deep copy of the ticket, call the operation with malformed existing data, assert that it raises the expected error, and then assert that the ticket still equals the original copy.
+
+**Repository test / verification (not a claim of a local test run):** Reviewed `add_note` in `campusflow/notes.py`, which calls `_validate_existing_notes(existing)` before appending the new note. Reviewed the regression test in [PR #39](https://github.com/Jireh7521/CampusFlow752_Next/pull/39), `test_invalid_existing_note_fields_are_rejected_without_mutation`. It covers a blank existing author, a blank message, and a non-text message; for each case it expects `ValueError` and checks that the ticket equals its deep-copied pre-call state. GitHub Actions run [#38756195636](https://github.com/Jireh7521/CampusFlow752_Next/actions/runs/38756195636) reports all full-suite jobs successful on Python 3.8, 3.11, and 3.12. PR #39 is still awaiting peer review, so this entry does not claim the PR is merged.
+
+**Decision:** Accept the validation-before-mutation approach because the implementation and regression test support the data-integrity requirement.
+
+**Reflection:** Rejecting invalid data is not enough by itself; the operation should also leave the original ticket unchanged when validation fails. Comparing the complete ticket before and after the rejected operation makes that requirement testable.
+
+**Related files / evidence:** `campusflow/notes.py`; `tests/test_notes.py`; [PR #39](https://github.com/Jireh7521/CampusFlow752_Next/pull/39); [CI run #38756195636](https://github.com/Jireh7521/CampusFlow752_Next/actions/runs/38756195636).
+
+**What I can now explain without AI:** Validate all existing note records before appending a new one, and test both the expected exception and the absence of any mutation.
+
+### Interaction #2 — To be completed from a separate real interaction
+
+Do not fill this section until I can record the actual prompt, experiment, result, and decision.
+
+### Interaction #3 — To be completed from a separate real interaction, including a changed or rejected AI suggestion
+
+Do not fill this section until I have checked a real AI suggestion against code, tests, documentation, or a reproducible experiment and can explain why I changed or rejected it.
