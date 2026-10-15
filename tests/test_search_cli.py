@@ -1,3 +1,4 @@
+import inspect
 import os
 import tempfile
 import unittest
@@ -12,7 +13,7 @@ def drive(answers, path):
 
     # Keep this test runnable against both the current main branch and the
     # integrated CLI after the authentication PR is merged.
-    if "users_path" in __import__("inspect").signature(run).parameters:
+    if "users_path" in inspect.signature(run).parameters:
         from campusflow.auth import create_user, save_users
 
         users_path = path + ".users.json"
