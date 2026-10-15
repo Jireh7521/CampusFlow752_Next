@@ -7,9 +7,28 @@ from campusflow.storage import load_tickets
 
 
 def drive(answers, path):
-    """Run the menu with scripted answers; return (exit_code, output text)."""
-    remaining = iter(answers)
+    """Run a menu session with scripted input, including auth when available."""
     output = []
+    run_options = {}
+
+    # This test branch can be tested against main before auth is merged, and
+    # against the integrated application after the authentication PR is merged.
+    if "users_path" in __import__("inspect").signature(run).parameters:
+        from campusflow.auth import create_user, save_users
+
+        users_path = path + ".users.json"
+        test_password = "CampusFlowTestPassword123!"
+        if not os.path.exists(users_path):
+            users = []
+            create_user(users, "testuser", test_password)
+            save_users(users, users_path)
+        answers = ["testuser", *answers]
+        run_options = {
+            "password_fn": lambda prompt="": test_password,
+            "users_path": users_path,
+        }
+
+    remaining = iter(answers)
 
     def fake_input(prompt=""):
         try:
@@ -17,9 +36,13 @@ def drive(answers, path):
         except StopIteration:
             raise EOFError
 
-    code = run(input_fn=fake_input, print_fn=output.append, path=path)
-    return code, "\n".join(output)
-
+    code = run(
+        input_fn=fake_input,
+        print_fn=output.append,
+        path=path,
+        **run_options,
+    )
+    return code, "\\n".join(output)
 
 class TestCli(unittest.TestCase):
     def setUp(self):
