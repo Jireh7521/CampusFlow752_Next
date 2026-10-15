@@ -144,6 +144,10 @@ The test suite uses Python's built-in `unittest`; no extra test packages are req
 | `tests/test_cli.py` | Menu sessions, restart behavior, notes, search, and safe error handling |
 | `tests/test_engineering_check.py` | Question bank, scoring, invalid-answer retries, quiz output |
 
+## Final demonstration
+
+Use [`docs/final-demo-checklist.md`](docs/final-demo-checklist.md) to record the fresh-clone test result, manual workflow/search/report/persistence checks, review evidence, and any remaining defects. It is a checklist only; record actual observations during the demonstration rather than treating expected behavior as a test result.
+
 ## Project layout
 
 ```text
