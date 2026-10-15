@@ -17,6 +17,8 @@ Use this checklist during a fresh-clone demonstration. **Do not mark a scenario 
 | `python3 --version` | Python 3.12.3 | PASS | Engineer B / 2026-10-15 |
 | `python3 -m unittest discover -s tests -v` | 123 tests ran in 19.058s; OK; 0 failures, 0 errors | PASS | Engineer B / 2026-10-15 |
 | Commit SHA tested locally | `9ac8e10b3ff0c5994e98c9e2621e82ef83469484` | PASS | Engineer B / 2026-10-15 |
+| `python3 -m unittest discover -s tests -v` on current `main` | 124 tests ran in 21.655s; OK; 0 failures, 0 errors | PASS | Engineer B / 2026-10-15 |
+| Current `main` commit used for the latest run and quiz | `0a953cf4f01fad676e89a343649bf1476c5589d4` | PASS | Engineer B / 2026-10-15 |
 | GitHub Actions run [#38749006848](https://github.com/Jireh7521/CampusFlow752_Next/actions/runs/38749006848), PR head commit `4da2cdf4fd18e812bb51cc361655c3cb3cc13334` | Python 3.8, 3.11, and 3.12 unit-test jobs all completed successfully | PASS | GitHub Actions / 2026-10-15 |
 
 ## Manual application scenarios
@@ -39,7 +41,7 @@ Start with `python3 main.py`. Use disposable local test data; do not use real su
 | ID continuity | Create a ticket and note, restart, then create another ticket and another note on the original ticket | Ticket IDs remain unique across restarts; note IDs continue sequentially per ticket |  |  |
 | Empty report | Run Reports when no tickets exist | Counts are zero and resolution percentage is 0%; no exception occurs |  |  |
 | Corrupt JSON safety | In a disposable copy, replace the data file with invalid JSON and start the app | Startup fails safely and does not overwrite the corrupt file |  |  |
-| Engineering Understanding Check | Run the six-question check; submit an invalid answer and blank explanations before valid answers | Invalid entries trigger retries; score is out of six; two nonblank explanations are shown |  |  |
+| Engineering Understanding Check | Run the six-question check and explain at least two answers with code examples | Score is out of six; two nonblank explanations are provided and relevant source files are identified | Engineer B completed the six-question check on commit `0a953cf4f01fad676e89a343649bf1476c5589d4`; score 5/6. Q1 explanation cited `campusflow/storage.py` and `StorageError` for malformed JSON; Q2 explanation cited `campusflow/workflow.py` and the unassigned-ticket guard in `change_status`. Invalid-answer/blank-explanation retry behavior was not separately verified in this run. | PARTIAL (Engineer B quiz and explanations complete; retry behavior unverified) |
 
 ## Git collaboration and review evidence
 
@@ -68,4 +70,5 @@ Record any failed scenario, defect, workaround, or limitation honestly. If no de
 - Tested commit: `9ac8e10b3ff0c5994e98c9e2621e82ef83469484`.
 - Fresh-clone environment: Python 3.12.3; `python3 -m unittest discover -s tests -v` ran 123 tests in 19.058 seconds and finished `OK` (0 failures, 0 errors).
 - Manual flow also verified startup and demo-account creation, ticket listing, assigning T002 to `demo_user`, moving assigned T002 to `in_progress`, adding one follow-up note, and resolving T002.
+- Engineering Understanding Check: Engineer B completed the six-question quiz on commit `0a953cf4f01fad676e89a343649bf1476c5589d4`, scored 5/6, and submitted two explanations for mentor discussion. Q1: `campusflow/storage.py` raises `StorageError` for malformed JSON so corrupted data is not silently treated as an empty list. Q2: `campusflow/workflow.py` rejects a transition to `in_progress` when the ticket has no assignee.
 - These notes record only observed steps. Unrun scenarios remain blank or marked PARTIAL; they are not implied to have passed.
