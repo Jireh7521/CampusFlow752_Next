@@ -20,10 +20,11 @@ Use this checklist during a fresh-clone demonstration. **Do not mark a scenario 
 | `python3 -m unittest discover -s tests -v` on current `main` | 124 tests ran in 21.655s; OK; 0 failures, 0 errors | PASS | Engineer B / 2026-10-15 |
 | Current `main` commit used for the latest run and quiz | `0a953cf4f01fad676e89a343649bf1476c5589d4` | PASS | Engineer B / 2026-10-15 |
 | GitHub Actions run [#38749006848](https://github.com/Jireh7521/CampusFlow752_Next/actions/runs/38749006848), PR head commit `4da2cdf4fd18e812bb51cc361655c3cb3cc13334` | Python 3.8, 3.11, and 3.12 unit-test jobs all completed successfully | PASS | GitHub Actions / 2026-10-15 |
+| GitHub Actions run [#38766963927](https://github.com/Jireh7521/CampusFlow752_Next/actions/runs/38766963927), current `main` commit `f6058100a08e2962cdfba93a9d1946f48ceff2cd` | Python 3.8, 3.11, and 3.12 full unit-test jobs all completed successfully after PR #44 merged | PASS | GitHub Actions / 2026-10-15 |
 
 ## Manual application scenarios
 
-Start with `python3 main.py`. Use disposable local test data; do not use real support-ticket data for the demonstration.
+Start with `python3 main.py` or `python3 -m campusflow.cli` (module entry point added in merged PR #44). Use disposable local test data; do not use real support-ticket data for the demonstration. CI passed on current `main` after PR #44, but interactive startup through both commands still needs to be observed and recorded locally.
 
 | Scenario | Steps / input | Expected behavior | Actual observation | Pass / fail |
 |---|---|---|---|---|
@@ -49,12 +50,12 @@ Record links and facts only after they happen. Do not self-approve a pull reques
 
 | Evidence | Link / observed details |
 |---|---|
-| Engineer A implementation-and-test PR |  |
-| Engineer B implementation-and-test PR |  |
-| Engineer A review of Engineer B PR (reviewer, date, substantive feedback) |  |
-| Engineer B review of Engineer A PR (reviewer, date, substantive feedback) |  |
-| Changes made in response to review feedback |  |
-| README contribution summaries confirmed by both fellows |  |
+| Engineer A implementation-and-test PR | [PR #24](https://github.com/Jireh7521/CampusFlow752_Next/pull/24) — local authentication; [PR #19](https://github.com/Jireh7521/CampusFlow752_Next/pull/19) — JSON validation and ID continuity. |
+| Engineer B implementation-and-test PR | [PR #25](https://github.com/Jireh7521/CampusFlow752_Next/pull/25) — persisted-ticket validation tests; [PR #30](https://github.com/Jireh7521/CampusFlow752_Next/pull/30) — combined search CLI tests. |
+| Engineer A review of Engineer B PR (reviewer, date, substantive feedback) | `Jireh7521` approved [PR #43](https://github.com/Jireh7521/CampusFlow752_Next/pull/43) on 2026-10-15. Feedback praised the 124-test evidence and source-based quiz explanations; requested follow-up verification of quiz retries, ID continuity after restart, empty reports, and corrupt-JSON safety. |
+| Engineer B review of Engineer A PR (reviewer, date, substantive feedback) | `bridgetukpoju01-droid` approved [PR #42](https://github.com/Jireh7521/CampusFlow752_Next/pull/42) on 2026-10-15. Feedback praised evidence-based source/test references, the distinction between simulated exceptions and untested power-loss/process-crash behavior, and avoiding false local-test claims. |
+| Changes made in response to review feedback | PR #42's learning-cycle entry was merged with the narrowed atomic-save claim and explicit testing limitation. PR #43's quiz evidence was merged and marks retry behavior unverified. The additional manual follow-ups requested on PR #43 have not yet been run, so no completion is claimed. |
+| README contribution summaries confirmed by both fellows | PENDING. Both fellows must reply with explicit confirmation or corrections on [Issue #10](https://github.com/Jireh7521/CampusFlow752_Next/issues/10); neither confirmation is inferred from PR approval. |
 
 ## Remaining defects and limitations
 
@@ -72,3 +73,4 @@ Record any failed scenario, defect, workaround, or limitation honestly. If no de
 - Manual flow also verified startup and demo-account creation, ticket listing, assigning T002 to `demo_user`, moving assigned T002 to `in_progress`, adding one follow-up note, and resolving T002.
 - Engineering Understanding Check: Engineer B completed the six-question quiz on commit `0a953cf4f01fad676e89a343649bf1476c5589d4`, scored 5/6, and submitted two explanations for mentor discussion. Q1: `campusflow/storage.py` raises `StorageError` for malformed JSON so corrupted data is not silently treated as an empty list. Q2: `campusflow/workflow.py` rejects a transition to `in_progress` when the ticket has no assignee.
 - These notes record only observed steps. Unrun scenarios remain blank or marked PARTIAL; they are not implied to have passed.
+- Current CI follow-up: after PR #44 merged, GitHub Actions run [#38766963927](https://github.com/Jireh7521/CampusFlow752_Next/actions/runs/38766963927) passed the full unit-test job on Python 3.8, 3.11, and 3.12 for `main` commit `f6058100a08e2962cdfba93a9d1946f48ceff2cd`. This is CI evidence, not a fresh local-clone or interactive CLI demonstration.
