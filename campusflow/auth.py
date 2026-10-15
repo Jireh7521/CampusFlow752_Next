@@ -83,7 +83,14 @@ def _hash_password(password):
         _PBKDF2_ITERATIONS,
         dklen=_KEY_BYTES,
     )
-    return f"pbkdf2_sha256\\u0024{_PBKDF2_ITERATIONS}\\u0024{salt.hex()}\\u0024{digest.hex()}"
+    return (
+        "pbkdf2_sha256$"
+        + str(_PBKDF2_ITERATIONS)
+        + "$"
+        + salt.hex()
+        + "$"
+        + digest.hex()
+    )
 
 
 def verify_password(password, password_hash):
@@ -141,7 +148,7 @@ def save_users(users, path=DEFAULT_USERS_PATH):
     try:
         with open(temp_path, "w", encoding="utf-8") as handle:
             json.dump(users, handle, indent=2)
-            handle.write("\\n")
+            handle.write(chr(10))
         try:
             os.chmod(temp_path, 0o600)
         except OSError:
