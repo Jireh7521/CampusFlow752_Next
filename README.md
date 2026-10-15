@@ -11,13 +11,12 @@ and asks the learner to explain two answers for mentor discussion.
 
 ## Team
 
-| Fellow | Role | Contribution |
-|--------|------|--------------|
-| _Engineer A name_ | _Confirm actual role_ | _Record the tests and features actually contributed_ |
-| _Engineer B name_ | _Confirm actual role_ | _Record the tests and features actually contributed_ |
+| Fellow | Role | Contribution recorded in GitHub |
+|--------|------|---------------------------------|
+| Engineer A (@Jireh7521) | Authentication and core persistence | Local CLI authentication and ticket/note JSON persistence work; see [PR #19](https://github.com/Jireh7521/CampusFlow752_Next/pull/19) and [PR #24](https://github.com/Jireh7521/CampusFlow752_Next/pull/24). |
+| Engineer B (@bridgetukpoju01-droid) | Search/report/quiz coverage and integration | Persisted-ticket validation regression tests, report CLI tests, quiz explanation tests, search CLI tests, and supporting documentation; see [PRs #25–#30](https://github.com/Jireh7521/CampusFlow752_Next/pulls). |
 
-Replace these placeholders with both engineers' agreed names, roles, and verified contributions.
-Do not claim work or reviews that have not been completed.
+**Confirmation still required:** this is a draft based on issue assignments and visible PR history, not a claim that both fellows have approved these summaries. Both engineers must confirm their roles and contributions before submission. Review history and the demonstration record must also reflect events that actually happened.
 
 ## Requirements and setup
 
@@ -194,9 +193,11 @@ The test suite uses Python's built-in `unittest`; no extra test packages are req
 | `tests/test_cli.py` | First-run account setup, login failures, menu sessions, restart behavior, safe error handling |
 | `tests/test_engineering_check.py` | Question bank, scoring, invalid-answer retries, quiz output |
 
-## Final demonstration
+## Final demonstration and learning evidence
 
 Use [`docs/final-demo-checklist.md`](docs/final-demo-checklist.md) to record the fresh-clone test result, manual workflow/search/report/persistence checks, review evidence, and any remaining defects. It is a checklist only; record actual observations during the demonstration rather than treating expected behavior as a test result.
+
+Use [`docs/ai-learning-log.md`](docs/ai-learning-log.md) to record real AI learning cycles, independent experiments, verification results, and engineering decisions. The file is a template until both fellows complete their own entries; do not invent prompts, test results, peer reviews, or retrospective learning claims.
 
 ## Project layout
 
@@ -226,7 +227,9 @@ docs/                            design decisions and learning log
 - Authentication protects the normal CLI flow but does not encrypt ticket data or protect against someone with direct access to the local files.
 - Tickets cannot be deleted or freely edited.
 
-## Pull requests
+## Representative implementation-and-test pull requests
 
-- Engineer A PR: _add the actual PR link_
-- Engineer B PR: _add the actual PR link_
+- Engineer A: [PR #24 — local authentication](https://github.com/Jireh7521/CampusFlow752_Next/pull/24) and [PR #19 — JSON validation and ID continuity](https://github.com/Jireh7521/CampusFlow752_Next/pull/19).
+- Engineer B: [PR #25 — persisted-ticket validation tests](https://github.com/Jireh7521/CampusFlow752_Next/pull/25) and [PR #30 — combined search CLI tests](https://github.com/Jireh7521/CampusFlow752_Next/pull/30).
+
+These links identify example contributions from repository history; they do not replace reciprocal peer-review evidence or the fellows' confirmation of the contribution summaries.
