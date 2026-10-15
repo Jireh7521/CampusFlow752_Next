@@ -37,7 +37,7 @@ CampusFlow requires a local username and password before displaying ticket infor
 - On the first run, create the first account when prompted. Usernames are 3–32 characters and may contain letters, numbers, periods, underscores, and hyphens.
 - Passwords must be at least 12 characters. Password input is hidden in a real terminal.
 - On later runs, sign in with that account. Three failed attempts end the current run.
-- Accounts are stored separately in `data/users.json`. Passwords are stored as salted scrypt hashes, not plain text. On platforms that support POSIX permissions, the account file is restricted to its owner.
+- Accounts are stored separately in `data/users.json`. Passwords are stored as salted PBKDF2-HMAC-SHA256 hashes (600,000 iterations), not plain text. On platforms that support POSIX permissions, the account file is restricted to its owner.
 - Ticket data remains in `data/tickets.json`; account records and tickets are separate files.
 - If the account file is malformed, CampusFlow stops instead of silently replacing it.
 
