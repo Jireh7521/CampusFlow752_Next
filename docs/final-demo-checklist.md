@@ -8,15 +8,15 @@ Use this checklist during a fresh-clone demonstration. **Do not mark a scenario 
   `git clone https://github.com/Jireh7521/CampusFlow752_Next.git`
 - [ ] Change into the repository:
   `cd CampusFlow752_Next`
-- [ ] Record the Python version: `python3 --version`
-- [ ] Run the full suite: `python3 -m unittest discover -s tests -v`
-- [ ] Record the exact test count, failures/errors, and commit SHA below.
+- [x] Record the Python version: `python3 --version`
+- [x] Run the full suite: `python3 -m unittest discover -s tests -v`
+- [x] Record the exact test count, failures/errors, and commit SHA below.
 
 | Command / commit | Actual observed result | Pass / fail | Run by / date |
 |---|---|---|---|
-| `python3 --version` |  |  |  |
-| `python3 -m unittest discover -s tests -v` |  |  |  |
-| Commit SHA tested |  |  |  |
+| `python3 --version` | Python 3.12.3 | PASS | Engineer B / 2026-10-15 |
+| `python3 -m unittest discover -s tests -v` | 123 tests ran in 19.898s; OK; 0 failures, 0 errors | PASS | Engineer B / 2026-10-15 |
+| Commit SHA tested | `70a8907baaba179c224fc2afc04a9aa83903b794` | PASS | Engineer B / 2026-10-15 |
 
 ## Manual application scenarios
 
