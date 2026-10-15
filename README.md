@@ -30,6 +30,19 @@ cd <repository-folder>
 python main.py
 ```
 
+## Authentication
+
+CampusFlow requires a local username and password before displaying ticket information.
+
+- On the first run, create the first account when prompted. Usernames are 3–32 characters and may contain letters, numbers, periods, underscores, and hyphens.
+- Passwords must be at least 12 characters. Password input is hidden in a real terminal.
+- On later runs, sign in with that account. Three failed attempts end the current run.
+- Accounts are stored separately in `data/users.json`. Passwords are stored as salted scrypt hashes, not plain text. On platforms that support POSIX permissions, the account file is restricted to its owner.
+- Ticket data remains in `data/tickets.json`; account records and tickets are separate files.
+- If the account file is malformed, CampusFlow stops instead of silently replacing it.
+
+This is local CLI authentication, not a multi-user server or a complete operating-system security boundary. Anyone who can change the program or access the local account file may be able to tamper with the local installation. Use a unique password and protect access to the computer and project files.
+
 ## Menu
 
 | Option | What it does |
@@ -121,7 +134,7 @@ Tickets are saved to `data/tickets.json` after each successful change and loaded
 - CampusFlow refuses to start when stored data cannot be read safely; it does not silently replace
   the unreadable file.
 - Ticket IDs continue from the highest existing ID after reload.
-- The local data file is ignored by Git.
+- Local data files are ignored by Git.
 
 ## Running the tests
 
@@ -135,13 +148,14 @@ The test suite uses Python's built-in `unittest`; no extra test packages are req
 
 | Test file | Coverage |
 |-----------|----------|
+| `tests/test_auth.py` | Password hashing, login, validation, account persistence, malformed account data |
 | `tests/test_tickets.py` | Priority rules, validation, IDs, assignment, ticket views, search |
 | `tests/test_workflow.py` | Status transitions, unassigned-ticket rule, reopening, rejected changes |
 | `tests/test_work_queue.py` | Priority ordering, numeric ID tie-breaks, included statuses |
 | `tests/test_reports.py` | Empty reports, status/priority counts, report changes |
 | `tests/test_storage.py` | Save/load, missing and corrupt files, collection validation, ID continuity |
 | `tests/test_notes.py` | Note validation, sequential IDs, workflow restrictions, persistence |
-| `tests/test_cli.py` | Menu sessions, restart behavior, notes, search, and safe error handling |
+| `tests/test_cli.py` | First-run account setup, login failures, menu sessions, restart behavior, safe error handling |
 | `tests/test_engineering_check.py` | Question bank, scoring, invalid-answer retries, quiz output |
 
 ## Project layout
@@ -149,15 +163,16 @@ The test suite uses Python's built-in `unittest`; no extra test packages are req
 ```text
 main.py
 campusflow/
+  auth.py                       local account creation and password verification
   tickets.py                    ticket creation, validation, priority, search
   workflow.py                   status transitions and reopening
   work_queue.py                 priority-sorted work queue
   reports.py                    totals and breakdowns
-  storage.py                    JSON load/save and validation
+  storage.py                    ticket JSON load/save and validation
   notes.py                      follow-up notes
   engineering_check.py          quiz interaction and scoring
   engineering_check_questions.py question bank
-  cli.py                        text menu
+  cli.py                        authentication and text menu
 tests/                           unittest suites
 docs/                            design decisions and learning log
 ```
@@ -167,7 +182,8 @@ docs/                            design decisions and learning log
 - Text interface only; designed for one local user at a time.
 - The work queue lists `open` tickets only; `in_progress` tickets are not shown.
 - Moving directly from `in_progress` back to `open` is unsupported; only resolved tickets can be reopened.
-- Staff names are free text; there is no staff directory.
+- Staff names are free text; there is no staff directory or role-based permissions.
+- Authentication protects the normal CLI flow but does not encrypt ticket data or protect against someone with direct access to the local files.
 - Tickets cannot be deleted or freely edited.
 
 ## Pull requests
