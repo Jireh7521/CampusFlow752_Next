@@ -10,6 +10,7 @@ import json
 import os
 import re
 import secrets
+import tempfile
 
 DEFAULT_USERS_PATH = os.path.join("data", "users.json")
 _PBKDF2_ITERATIONS = 600_000
@@ -29,7 +30,7 @@ def load_users(path=DEFAULT_USERS_PATH):
     try:
         with open(path, "r", encoding="utf-8") as handle:
             users = json.load(handle)
-    except (OSError, json.JSONDecodeError) as error:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
         raise AuthenticationError(
             f"Could not safely read accounts from '{path}'. The file was not changed."
         ) from error
@@ -140,25 +141,34 @@ def authenticate(users, username, password):
 
 
 def save_users(users, path=DEFAULT_USERS_PATH):
-    """Save accounts atomically and restrict the file to its owner where supported."""
-    folder = os.path.dirname(path)
-    if folder:
-        os.makedirs(folder, exist_ok=True)
-    temp_path = path + ".tmp"
+    """Save accounts atomically using a private temporary file where supported."""
+    folder = os.path.dirname(path) or "."
+    os.makedirs(folder, exist_ok=True)
+    temp_path = None
     try:
-        with open(temp_path, "w", encoding="utf-8") as handle:
+        # NamedTemporaryFile creates the file with restrictive permissions on
+        # POSIX systems, avoiding a window where the password hashes are exposed.
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=folder,
+            prefix=".users-",
+            suffix=".json.tmp",
+            delete=False,
+        ) as handle:
+            temp_path = handle.name
             json.dump(users, handle, indent=2)
-            handle.write(chr(10))
-        try:
-            os.chmod(temp_path, 0o600)
-        except OSError:
-            # Some platforms do not support POSIX permission bits.
-            pass
+            handle.write("\\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+
         os.replace(temp_path, path)
+        temp_path = None
         try:
             os.chmod(path, 0o600)
         except OSError:
+            # Some platforms do not support POSIX permission bits.
             pass
     finally:
-        if os.path.exists(temp_path):
+        if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
