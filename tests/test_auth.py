@@ -65,6 +65,17 @@ class TestAuthentication(unittest.TestCase):
         with open(self.path, encoding="utf-8") as handle:
             self.assertEqual(handle.read(), "{not valid json")
 
+    def test_invalid_utf8_account_file_is_rejected_without_overwrite(self):
+        invalid_bytes = b"\\xff\\xfe"
+        with open(self.path, "wb") as handle:
+            handle.write(invalid_bytes)
+
+        with self.assertRaises(AuthenticationError):
+            load_users(self.path)
+
+        with open(self.path, "rb") as handle:
+            self.assertEqual(handle.read(), invalid_bytes)
+
     def test_invalid_hash_record_is_rejected(self):
         with open(self.path, "w", encoding="utf-8") as handle:
             json.dump([{"username": "valid_user", "password_hash": "plain-text"}], handle)
