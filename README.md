@@ -98,8 +98,7 @@ has been reopened. Notes and note-ID continuity are preserved when tickets are s
   Ties are sorted by the numeric portion of the ticket ID. Other statuses are excluded.
 - Search supports a title query and optional category, status, and priority filters. Filters are
   combined, and a separate menu option sorts search results by priority.
-- Reports show total ticket count and counts by every status and priority, including zero counts.
-  Empty reports are supported.
+- Reports show total ticket count; counts by every status, priority, and category (including zero-count values); unresolved and resolved totals; and the resolution percentage based on each ticket's current status. Empty reports show zero counts and a 0% resolution percentage.
 
 ## Engineering Understanding Check
 
