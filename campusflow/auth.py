@@ -158,7 +158,7 @@ def save_users(users, path=DEFAULT_USERS_PATH):
         ) as handle:
             temp_path = handle.name
             json.dump(users, handle, indent=2)
-            handle.write("\\n")
+            handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
 
