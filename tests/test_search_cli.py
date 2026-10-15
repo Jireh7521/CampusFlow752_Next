@@ -6,8 +6,28 @@ from campusflow.cli import run
 
 
 def drive(answers, path):
-    remaining = iter(answers)
+    """Run the CLI with scripted input and a temporary account when auth exists."""
     output = []
+    run_options = {}
+
+    # Keep this test runnable against both the current main branch and the
+    # integrated CLI after the authentication PR is merged.
+    if "users_path" in __import__("inspect").signature(run).parameters:
+        from campusflow.auth import create_user, save_users
+
+        users_path = path + ".users.json"
+        test_password = "CampusFlowTestPassword123!"
+        if not os.path.exists(users_path):
+            users = []
+            create_user(users, "testuser", test_password)
+            save_users(users, users_path)
+        answers = ["testuser", *answers]
+        run_options = {
+            "password_fn": lambda prompt="": test_password,
+            "users_path": users_path,
+        }
+
+    remaining = iter(answers)
 
     def fake_input(prompt=""):
         try:
@@ -15,9 +35,13 @@ def drive(answers, path):
         except StopIteration:
             raise EOFError
 
-    code = run(input_fn=fake_input, print_fn=output.append, path=path)
-    return code, "\n".join(output)
-
+    code = run(
+        input_fn=fake_input,
+        print_fn=output.append,
+        path=path,
+        **run_options,
+    )
+    return code, "\\n".join(output)
 
 class TestSearchCli(unittest.TestCase):
     def setUp(self):
