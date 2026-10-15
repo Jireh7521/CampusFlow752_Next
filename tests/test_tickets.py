@@ -9,6 +9,7 @@ from campusflow.tickets import (
     next_ticket_id,
     normalize_category,
     normalize_urgency,
+    search_tickets,
     validate_affected_users,
 )
 
