@@ -1,9 +1,10 @@
+import copy
 import json
 import os
 import tempfile
 import unittest
 
-from campusflow.storage import StorageError, load_tickets, save_tickets
+from campusflow.storage import StorageError, _check_shape, load_tickets, save_tickets
 from campusflow.tickets import create_ticket
 
 
@@ -116,6 +117,19 @@ class TestStorage(unittest.TestCase):
 
         with open(self.path, encoding="utf-8") as handle:
             self.assertEqual(handle.read(), original)
+
+
+    def test_failed_collection_validation_does_not_partially_mutate_input(self):
+        tickets = make_tickets()
+        tickets[0].pop("notes", None)  # legacy record requiring in-memory migration
+        tickets[1]["status"] = "invalid"
+        original = copy.deepcopy(tickets)
+
+        with self.assertRaises(StorageError):
+            _check_shape(tickets, self.path)
+
+        self.assertEqual(tickets, original)
+        self.assertNotIn("notes", tickets[0])
 
     def test_save_leaves_no_temp_file(self):
         save_tickets(make_tickets(), self.path)
