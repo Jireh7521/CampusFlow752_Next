@@ -17,6 +17,31 @@ def _next_note_id(notes):
     return f"N{highest + 1:03d}"
 
 
+def _validate_existing_notes(notes):
+    """Reject malformed in-memory notes before an append can partially mutate a ticket."""
+    seen_ids = set()
+    for note in notes:
+        if not isinstance(note, dict):
+            raise ValueError("Existing ticket notes must be valid note records.")
+
+        note_id = note.get("note_id")
+        match = _NOTE_ID_PATTERN.fullmatch(note_id) if isinstance(note_id, str) else None
+        if match is None:
+            raise ValueError("Existing ticket notes must have valid note IDs.")
+
+        numeric_id = int(match.group(1))
+        if numeric_id in seen_ids:
+            raise ValueError("Existing ticket notes must have unique note IDs.")
+        seen_ids.add(numeric_id)
+
+        author = note.get("author")
+        message = note.get("message")
+        if not isinstance(author, str) or not author.strip():
+            raise ValueError("Existing ticket notes must have a nonblank author.")
+        if not isinstance(message, str) or not 5 <= len(message.strip()) <= 300:
+            raise ValueError("Existing ticket notes must have a message between 5 and 300 characters.")
+
+
 def add_note(tickets, ticket_id, author, message):
     """Validate and append a note only when its ticket is modifiable."""
     ticket = find_ticket(tickets, ticket_id)
@@ -36,6 +61,7 @@ def add_note(tickets, ticket_id, author, message):
     existing = ticket.get("notes", [])
     if not isinstance(existing, list):
         raise ValueError("Ticket notes must be a list.")
+    _validate_existing_notes(existing)
     note = {
         "note_id": _next_note_id(existing),
         "author": author.strip(),
