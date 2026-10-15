@@ -35,7 +35,7 @@ Start with `python3 main.py`. Use disposable local test data; do not use real su
 | Open work queue | Use the work-queue option after adding tickets in different statuses | Existing queue behavior is retained; only eligible open tickets appear |  |  |
 | Report metrics | View reports with at least two tickets, then resolve and reopen one | Totals, category/status/priority counts, and resolution percentage reflect current statuses |  |  |
 | Follow-up notes | Add two notes to a ticket, view it, restart the application | Notes appear in note-ID order and persist after restart |  |  |
-| ID continuity | Create a ticket and note, restart, then create another | Ticket and note IDs do not collide with existing IDs |  |  |
+| ID continuity | Create a ticket and note, restart, then create another ticket and another note on the original ticket | Ticket IDs remain unique across restarts; note IDs continue sequentially per ticket |  |  |
 | Empty report | Run Reports when no tickets exist | Counts are zero and resolution percentage is 0%; no exception occurs |  |  |
 | Corrupt JSON safety | In a disposable copy, replace the data file with invalid JSON and start the app | Startup fails safely and does not overwrite the corrupt file |  |  |
 | Engineering Understanding Check | Run the six-question check; submit an invalid answer and blank explanations before valid answers | Invalid entries trigger retries; score is out of six; two nonblank explanations are shown |  |  |
