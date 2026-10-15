@@ -3,6 +3,7 @@ import json
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from campusflow.storage import StorageError, _check_shape, load_tickets, save_tickets
 from campusflow.tickets import create_ticket
@@ -145,6 +146,35 @@ class TestStorage(unittest.TestCase):
 
     def test_save_leaves_no_temp_file(self):
         save_tickets(make_tickets(), self.path)
+        self.assertFalse(os.path.exists(self.path + ".tmp"))
+
+    def test_failed_atomic_replace_preserves_saved_file_and_cleans_temp_file(self):
+        save_tickets(make_tickets(), self.path)
+        with open(self.path, encoding="utf-8") as handle:
+            original_contents = handle.read()
+
+        changed_tickets = make_tickets()
+        changed_tickets[0]["title"] = "Changed after failed save"
+
+        with patch("campusflow.storage.os.replace", side_effect=OSError("simulated replace failure")):
+            with self.assertRaisesRegex(OSError, "simulated replace failure"):
+                save_tickets(changed_tickets, self.path)
+
+        with open(self.path, encoding="utf-8") as handle:
+            self.assertEqual(handle.read(), original_contents)
+        self.assertFalse(os.path.exists(self.path + ".tmp"))
+
+    def test_failed_json_write_preserves_saved_file_and_cleans_temp_file(self):
+        save_tickets(make_tickets(), self.path)
+        with open(self.path, encoding="utf-8") as handle:
+            original_contents = handle.read()
+
+        with patch("campusflow.storage.json.dump", side_effect=TypeError("simulated serialization failure")):
+            with self.assertRaisesRegex(TypeError, "simulated serialization failure"):
+                save_tickets(make_tickets(), self.path)
+
+        with open(self.path, encoding="utf-8") as handle:
+            self.assertEqual(handle.read(), original_contents)
         self.assertFalse(os.path.exists(self.path + ".tmp"))
 
 
