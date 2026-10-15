@@ -1,6 +1,6 @@
 """Local username/password authentication for the CampusFlow CLI.
 
-Passwords are stored as salted scrypt hashes, never as plain text.
+Passwords are stored as salted PBKDF2-HMAC-SHA256 hashes, never as plain text.
 This protects the application login; it is not an operating-system security boundary.
 """
 
@@ -12,11 +12,9 @@ import re
 import secrets
 
 DEFAULT_USERS_PATH = os.path.join("data", "users.json")
-_SCRYPT_N = 2**14
-_SCRYPT_R = 8
-_SCRYPT_P = 1
+_PBKDF2_ITERATIONS = 600_000
 _SALT_BYTES = 16
-_KEY_BYTES = 64
+_KEY_BYTES = 32
 _USERNAME_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]{3,32}$")
 
 
@@ -61,18 +59,16 @@ def load_users(path=DEFAULT_USERS_PATH):
 
 def _is_supported_hash(value):
     parts = value.split("$")
-    if len(parts) != 6 or parts[0] != "scrypt":
+    if len(parts) != 4 or parts[0] != "pbkdf2_sha256":
         return False
     try:
-        n, r, p = (int(parts[1]), int(parts[2]), int(parts[3]))
-        salt = bytes.fromhex(parts[4])
-        digest = bytes.fromhex(parts[5])
+        iterations = int(parts[1])
+        salt = bytes.fromhex(parts[2])
+        digest = bytes.fromhex(parts[3])
     except (ValueError, TypeError):
         return False
     return (
-        n == _SCRYPT_N
-        and r == _SCRYPT_R
-        and p == _SCRYPT_P
+        iterations == _PBKDF2_ITERATIONS
         and len(salt) == _SALT_BYTES
         and len(digest) == _KEY_BYTES
     )
@@ -80,15 +76,14 @@ def _is_supported_hash(value):
 
 def _hash_password(password):
     salt = secrets.token_bytes(_SALT_BYTES)
-    digest = hashlib.scrypt(
+    digest = hashlib.pbkdf2_hmac(
+        "sha256",
         password.encode("utf-8"),
-        salt=salt,
-        n=_SCRYPT_N,
-        r=_SCRYPT_R,
-        p=_SCRYPT_P,
+        salt,
+        _PBKDF2_ITERATIONS,
         dklen=_KEY_BYTES,
     )
-    return f"scrypt\u0024{_SCRYPT_N}\u0024{_SCRYPT_R}\u0024{_SCRYPT_P}\u0024{salt.hex()}\u0024{digest.hex()}"
+    return f"pbkdf2_sha256\\u0024{_PBKDF2_ITERATIONS}\\u0024{salt.hex()}\\u0024{digest.hex()}"
 
 
 def verify_password(password, password_hash):
@@ -97,13 +92,12 @@ def verify_password(password, password_hash):
         return False
     if not _is_supported_hash(password_hash):
         return False
-    _, n, r, p, salt_hex, expected_hex = password_hash.split("$")
-    actual = hashlib.scrypt(
+    _, iterations, salt_hex, expected_hex = password_hash.split("$")
+    actual = hashlib.pbkdf2_hmac(
+        "sha256",
         password.encode("utf-8"),
-        salt=bytes.fromhex(salt_hex),
-        n=int(n),
-        r=int(r),
-        p=int(p),
+        bytes.fromhex(salt_hex),
+        int(iterations),
         dklen=_KEY_BYTES,
     )
     return hmac.compare_digest(actual, bytes.fromhex(expected_hex))
@@ -147,7 +141,7 @@ def save_users(users, path=DEFAULT_USERS_PATH):
     try:
         with open(temp_path, "w", encoding="utf-8") as handle:
             json.dump(users, handle, indent=2)
-            handle.write("\n")
+            handle.write("\\n")
         try:
             os.chmod(temp_path, 0o600)
         except OSError:
