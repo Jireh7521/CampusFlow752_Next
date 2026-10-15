@@ -246,3 +246,6 @@ def _handle(choice, tickets, input_fn, print_fn):
 
     print_fn("Invalid choice. Enter a number from the menu.")
     return False
+
+if __name__ == "__main__":
+    raise SystemExit(run())
