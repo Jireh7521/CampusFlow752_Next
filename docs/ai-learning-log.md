@@ -44,13 +44,93 @@ What I can now explain without AI:
 
 ---
 
-## Fellow: ______
+## Fellow: bridgetukpoju01-droid (Engineer B)
 
-### Interaction #1 —
+### Interaction #1 — Python booleans and integer validation
 
-### Interaction #2 —
+**Problem:** Understand why validating a positive integer using only `isinstance(value, int)` can accept a boolean as a user count.
 
-### Interaction #3 — (include the one where you changed or rejected AI advice)
+**My initial understanding:** I expected `True` not to pass an integer check.
+
+**Prompt to AI:** The exact original wording was not preserved, so I am recording the topic rather than inventing a quotation.
+
+**Useful AI guidance:** In Python, `bool` is a subclass of `int`. A validator should explicitly reject booleans before accepting integers, and should enforce the required minimum.
+
+**My experiment:**
+```python
+print("Is True an integer?", isinstance(True, int))
+print("Is 5 an integer?", isinstance(5, int))
+print("Is 5.0 an integer?", isinstance(5.0, int))
+```
+
+**Observed result:**
+```text
+Is True an integer? True
+Is 5 an integer? True
+Is 5.0 an integer? False
+```
+
+**Verification source or result:** The output above was observed when I ran the experiment. The repository's affected-user validation and regression tests also cover boolean, float, zero, and negative values.
+
+**Decision:** Improved the validation approach by treating booleans separately rather than relying on `isinstance(value, int)` alone.
+
+**Related code:** `campusflow/tickets.py` and the affected-users validation tests.
+
+**What I can now explain without AI:** Python treats `True` as an integer subtype, so an integer type check alone is not enough to validate a positive user count.
+
+### Interaction #2 — Lexicographic sorting versus numeric ticket IDs
+
+**Problem:** Understand why sorting ticket IDs as strings can put `T10` before `T2`.
+
+**My initial understanding:** I expected the ticket IDs to sort in numeric order.
+
+**Prompt to AI:** The exact original wording was not preserved, so I am recording the topic rather than inventing a quotation.
+
+**Useful AI guidance:** String sorting compares characters lexicographically. To sort ticket IDs numerically, extract and convert the numeric suffix before comparing.
+
+**My experiment:**
+```python
+tickets = [("high", "T10"), ("high", "T2")]
+print("String sorting:")
+print(sorted(tickets, key=lambda ticket: (ticket[0], ticket[1])))
+print("\nNumeric ticket-ID sorting:")
+print(sorted(tickets, key=lambda ticket: (ticket[0], int(ticket[1][1:]))))
+```
+
+**Observed result:**
+```text
+String sorting:
+[('high', 'T10'), ('high', 'T2')]
+
+Numeric ticket-ID sorting:
+[('high', 'T2'), ('high', 'T10')]
+```
+
+**Verification source or result:** The output above was observed when I ran the experiment. The repository includes `test_priority_sort_uses_priority_then_numeric_ticket_id` to protect the intended behavior.
+
+**Decision:** Use the numeric ticket-ID key so IDs sort in numeric order within each priority.
+
+**Related code:** `campusflow/tickets.py` and `test_priority_sort_uses_priority_then_numeric_ticket_id`.
+
+**What I can now explain without AI:** Sorting strings is not the same as sorting their numeric suffixes; `T2` must be compared as number 2 to come before `T10`.
+
+### Interaction #3 — Correcting incomplete report documentation after an audit
+
+**Problem:** The first report description omitted metrics that the implementation actually exposes.
+
+**My initial understanding:** The initial short description sounded complete, but it described only totals and status/priority counts.
+
+**Prompt to AI:** “audit the work”.
+
+**Useful AI guidance:** Compare documentation claims with the actual report model and regression tests instead of assuming the existing wording covers the full feature.
+
+**Verification source or result:** The team audit checked `campusflow/reports.py` and `tests/test_reports.py`. The report includes category counts, resolved and unresolved totals, resolution percentage, and an empty-report case. The correction and its evidence are recorded in the team example above and in merged [PR #28](https://github.com/Jireh7521/CampusFlow752_Next/pull/28).
+
+**Decision:** Improve the report documentation rather than accept wording that described only part of the feature.
+
+**Reflection:** Documentation needs to be checked against the implementation and tests. This was a team audit, not a claim that I alone performed every verification step.
+
+**What I can now explain without AI:** The report exposes more than total counts; the category breakdown, resolution totals, percentage, and empty-report behavior also need to be documented accurately.
 
 ---
 
