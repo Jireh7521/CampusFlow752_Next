@@ -187,7 +187,9 @@ The test suite uses Python's built-in `unittest`; no extra test packages are req
 | `tests/test_tickets.py` | Priority rules, validation, IDs, assignment, ticket views, search |
 | `tests/test_workflow.py` | Status transitions, unassigned-ticket rule, reopening, rejected changes |
 | `tests/test_work_queue.py` | Priority ordering, numeric ID tie-breaks, included statuses |
-| `tests/test_reports.py` | Empty reports, status/priority counts, report changes |
+| `tests/test_reports.py` | Empty reports, status/priority/category counts, report changes |
+| `tests/test_reports_cli.py` | Report CLI output and resolve/reopen metrics |
+| `tests/test_search_cli.py` | Combined search filters and invalid-filter retries |
 | `tests/test_storage.py` | Save/load, missing and corrupt files, collection validation, ID continuity |
 | `tests/test_notes.py` | Note validation, sequential IDs, workflow restrictions, persistence |
 | `tests/test_cli.py` | First-run account setup, login failures, menu sessions, restart behavior, safe error handling |
