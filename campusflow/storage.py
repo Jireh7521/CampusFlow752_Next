@@ -171,6 +171,15 @@ def save_tickets(tickets, path=DEFAULT_PATH):
         os.makedirs(folder, exist_ok=True)
 
     temp_path = path + ".tmp"
-    with open(temp_path, "w", encoding="utf-8") as handle:
-        json.dump(tickets, handle, indent=2)
-    os.replace(temp_path, path)
+    try:
+        with open(temp_path, "w", encoding="utf-8") as handle:
+            json.dump(tickets, handle, indent=2)
+        os.replace(temp_path, path)
+    except BaseException:
+        # A failed write or replace must not leave a stale temporary file.
+        # Preserve the original exception if cleanup itself is unsuccessful.
+        try:
+            os.remove(temp_path)
+        except OSError:
+            pass
+        raise
