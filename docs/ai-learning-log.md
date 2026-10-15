@@ -156,9 +156,27 @@ Numeric ticket-ID sorting:
 
 **What I can now explain without AI:** Validate all existing note records before appending a new one, and test both the expected exception and the absence of any mutation.
 
-### Interaction #2 — To be completed from a separate real interaction
+### Interaction #2 — Atomic JSON persistence and failure timing
 
-Do not fill this section until I can record the actual prompt, experiment, result, and decision.
+**Problem:** Understand why the result of a failed atomic JSON save depends on whether the failure occurs while writing the temporary file or while replacing the saved file.
+
+**My initial understanding / recollection:** “When saving data via atomic JSON persistence, systems typically use a ‘write-to-temp-then-rename’ strategy. If a failure occurs mid-process, the exact outcome depends on at which precise moment the failure happens.” This records the understanding I supplied in this conversation; it does not claim to be an earlier, preserved AI prompt.
+
+**Prompt to AI:** In this conversation, I described the write-to-temporary-file-then-rename strategy and asked to develop honest Issue #9 learning-log entries based on real interactions and verifiable evidence, without inventing prompts, experiments, or results.
+
+**Useful AI guidance:** Separate the failure points and check the invariants that matter: the previously saved file should remain unchanged if writing or replacement fails; the temporary file should be cleaned up; and the original exception should propagate. A test should simulate the failure at the specific stage rather than assume every failure has the same outcome.
+
+**Independent verification performed for this log:** Inspected `save_tickets` in `campusflow/storage.py`. It writes JSON to `path + ".tmp"`, then calls `os.replace(temp_path, path)`; its exception handler attempts to remove the temporary file and re-raises the original exception. Also inspected the merged [PR #35](https://github.com/Jireh7521/CampusFlow752_Next/pull/35) and `tests/test_storage.py`. The partial-write regression test simulates `json.dump` writing partial content and then raising `OSError`; it asserts that the original saved file is unchanged and the temporary file is absent. A separate replacement-failure test checks the same invariants for a failed `os.replace`. This is a source-and-test review, not a claim that I personally ran the test command during this interaction.
+
+**Observed result:** The checked-in tests specify those expected outcomes. PR #35 is merged into `main`. I have not recorded a new local test run here.
+
+**Decision:** Keep the failure cases distinct in the test plan: partial temporary-file write failure and replacement failure are separate scenarios, even though both should preserve the existing saved file and clean up the temporary file.
+
+**Reflection:** “Atomic save” should be verified by observing the actual file state after a simulated failure, not inferred just because the code uses a temporary filename. The stage where failure happens determines which cleanup path is being exercised.
+
+**Related files / evidence:** `campusflow/storage.py`; `tests/test_storage.py`; [merged PR #35](https://github.com/Jireh7521/CampusFlow752_Next/pull/35).
+
+**What I can now explain without AI:** The temporary file is written first, and the saved file is replaced only after serialization succeeds. Tests should simulate failures at both writing and replacement, then check the original file, temporary-file cleanup, and propagated exception.
 
 ### Interaction #3 — To be completed from a separate real interaction, including a changed or rejected AI suggestion
 
