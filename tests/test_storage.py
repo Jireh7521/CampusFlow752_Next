@@ -53,6 +53,18 @@ class TestStorage(unittest.TestCase):
         with open(self.path, encoding="utf-8") as handle:
             self.assertEqual(handle.read(), broken_json)
 
+    def test_invalid_utf8_file_raises_storage_error_and_is_preserved(self):
+        invalid_bytes = b"\xff\xfe"
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
+        with open(self.path, "wb") as handle:
+            handle.write(invalid_bytes)
+
+        with self.assertRaises(StorageError):
+            load_tickets(self.path)
+
+        with open(self.path, "rb") as handle:
+            self.assertEqual(handle.read(), invalid_bytes)
+
     def test_wrong_shape_rejected(self):
         os.makedirs(os.path.dirname(self.path))
         for content in ('{"id": "T001"}', '[1, 2]', '[{"id": "T001"}]'):
