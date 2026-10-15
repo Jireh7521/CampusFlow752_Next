@@ -30,6 +30,22 @@ python3 -m unittest discover -s tests -v
 python3 main.py
 ```
 
+## Start the CLI
+
+From the repository root, use either supported entry point:
+
+```bash
+python3 main.py
+```
+
+or:
+
+```bash
+python3 -m campusflow.cli
+```
+
+Both commands start the same authenticated interactive menu. On the first run, follow the prompts to create a local account; on later runs, sign in. Choose menu option `0` to exit. The module command is supported by the `__main__` guard in `campusflow/cli.py`; the interactive startup should still be checked locally as part of the final demonstration.
+
 ## Authentication
 
 CampusFlow requires a local username and password before displaying ticket information.
