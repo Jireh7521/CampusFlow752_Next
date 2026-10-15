@@ -9,25 +9,38 @@ It also includes an **Engineering Understanding Check**: a six-question multiple
 the project's engineering rules. It validates answers, retries invalid choices, calculates a score,
 and asks the learner to explain two answers for mentor discussion.
 
-## Team
+## Team and contribution record
 
-| Fellow | Role | Contribution recorded in GitHub |
-|--------|------|---------------------------------|
-| Engineer A (@Jireh7521) | Authentication and core persistence | Local CLI authentication and ticket/note JSON persistence work; see [PR #19](https://github.com/Jireh7521/CampusFlow752_Next/pull/19) and [PR #24](https://github.com/Jireh7521/CampusFlow752_Next/pull/24). |
-| Engineer B (@bridgetukpoju01-droid) | Search/report/quiz coverage and integration | Persisted-ticket validation regression tests, report CLI tests, quiz explanation tests, search CLI tests, and supporting documentation; see [PRs #25–#30](https://github.com/Jireh7521/CampusFlow752_Next/pulls). |
+| Fellow | Role | Representative contribution evidence |
+|--------|------|---------------------------------------|
+| Engineer A (@Jireh7521) | Authentication and core persistence | Local CLI authentication and ticket/note JSON persistence; see [PR #19](https://github.com/Jireh7521/CampusFlow752_Next/pull/19) and [PR #24](https://github.com/Jireh7521/CampusFlow752_Next/pull/24). |
+| Engineer B (@bridgetukpoju01-droid) | Search/report/quiz coverage and integration | Persisted-ticket validation regression tests, report CLI tests, quiz explanation tests, search CLI tests, and supporting documentation; see [PR #25](https://github.com/Jireh7521/CampusFlow752_Next/pull/25) and [PR #30](https://github.com/Jireh7521/CampusFlow752_Next/pull/30). |
 
-**Confirmation still required:** this is a draft based on issue assignments and visible PR history, not a claim that both fellows have approved these summaries. Both engineers must confirm their roles and contributions before submission. Review history and the demonstration record must also reflect events that actually happened.
+**Contribution confirmation:** The table is a draft summary based on issue assignments and visible PR history. Before final submission, each fellow must review the row attributed to them and explicitly confirm it or suggest corrections in [Issue #10](https://github.com/Jireh7521/CampusFlow752_Next/issues/10). A PR approval does not automatically confirm the README summary.
 
 ## Requirements and setup
 
 - Python 3.8 or newer.
 - Standard library only; no third-party runtime dependencies.
 
+Clone the repository and run the automated tests:
+
 ```bash
 git clone https://github.com/Jireh7521/CampusFlow752_Next.git
 cd CampusFlow752_Next
 python3 -m unittest discover -s tests -v
+```
+
+Start the command-line application using either supported entry point:
+
+```bash
 python3 main.py
+```
+
+or:
+
+```bash
+python3 -m campusflow.cli
 ```
 
 ## Authentication
@@ -42,6 +55,19 @@ CampusFlow requires a local username and password before displaying ticket infor
 - If the account file is malformed, CampusFlow stops instead of silently replacing it.
 
 This is local CLI authentication, not a multi-user server or a complete operating-system security boundary. Anyone who can change the program or access the local account file may be able to tamper with the local installation. Use a unique password and protect access to the computer and project files.
+
+## Safe interactive demo
+
+For a demo, use a temporary working directory so that account and ticket files are created outside the repository and your existing local data is left untouched. Run these commands from the repository root:
+
+```bash
+REPO="$PWD"
+TEST_DIR=$(mktemp -d)
+cd "$TEST_DIR"
+PYTHONPATH="$REPO" python3 -m campusflow.cli
+```
+
+Create a disposable demo account when prompted. The application stores its relative `data/` files under the temporary directory used as the current working directory. When finished, exit with menu option `0`. To remove the demo files afterward, run `rm -rf "$TEST_DIR"` only after confirming that `TEST_DIR` still points to the temporary demo directory.
 
 ## Menu
 
@@ -176,7 +202,7 @@ rather than silently corrected.
 From the repository root, run:
 
 ```bash
-python -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -v
 ```
 
 The test suite uses Python's built-in `unittest`; no extra test packages are required.
@@ -199,7 +225,7 @@ The test suite uses Python's built-in `unittest`; no extra test packages are req
 
 Use [`docs/final-demo-checklist.md`](docs/final-demo-checklist.md) to record the fresh-clone test result, manual workflow/search/report/persistence checks, review evidence, and any remaining defects. It is a checklist only; record actual observations during the demonstration rather than treating expected behavior as a test result.
 
-Use [`docs/ai-learning-log.md`](docs/ai-learning-log.md) to record real AI learning cycles, independent experiments, verification results, and engineering decisions. The file is a template until both fellows complete their own entries; do not invent prompts, test results, peer reviews, or retrospective learning claims.
+Use [`docs/ai-learning-log.md`](docs/ai-learning-log.md) to record real AI learning cycles, independent experiments, verification results, and engineering decisions. The file includes recorded examples, but each fellow should ensure that any entry attributed to them reflects work they can personally explain. Do not invent prompts, test results, peer reviews, or retrospective learning claims.
 
 ## Project layout
 
