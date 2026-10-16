@@ -1,7 +1,9 @@
 import json
 import os
+import runpy
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from campusflow.auth import create_user, save_users
 from campusflow.cli import run
@@ -224,6 +226,17 @@ class TestCli(unittest.TestCase):
             out.index("T002 | Second critical priority"),
             out.index("T001 | First low priority"),
         )
+
+    def test_main_py_entrypoint_invokes_cli_and_propagates_exit_code(self):
+        repo_root = os.path.dirname(os.path.dirname(__file__))
+        main_path = os.path.join(repo_root, "main.py")
+
+        with patch("campusflow.cli.run", return_value=7) as mocked_run:
+            with self.assertRaises(SystemExit) as raised:
+                runpy.run_path(main_path, run_name="__main__")
+
+        self.assertEqual(raised.exception.code, 7)
+        mocked_run.assert_called_once_with()
 
     def test_exit_on_closed_input(self):
         code, _ = drive([], self.path)

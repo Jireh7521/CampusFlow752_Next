@@ -48,6 +48,21 @@ Use disposable local test data; do not use real support-ticket data for the demo
 | Corrupt JSON safety | In a disposable copy, replace the data file with invalid JSON and start the app | Startup fails safely and does not overwrite the corrupt file | On 2026-10-16, startup displayed a clear invalid-JSON error, refused to continue, and reported that the file was not changed. The malformed contents remained in the disposable test file. | PASS |
 | Engineering Understanding Check | Run the six-question check and explain at least two answers with code examples | Score is out of six; two nonblank explanations are provided and relevant source files are identified | On 2026-10-16, first attempt scored 6/6 and two code-based explanations were submitted. A second attempt with one deliberately incorrect answer scored 5/6; the check continued to the next question, counted the wrong answer, accepted two explanations, and returned to the menu. Automatic retry after a wrong answer was not observed. | PASS |
 
+
+## Automated regression coverage related to manual scenarios
+
+The tests below provide repeatable regression coverage for several behaviors that are only partly or not yet observed in the live manual demo. **Automated coverage is not a claim that the corresponding interactive scenario was manually demonstrated.** Keep the manual table above marked PARTIAL or NOT RUN until the actual demo is observed.
+
+| Behavior | Automated evidence | Boundary / manual follow-up |
+|---|---|---|
+| `main.py` entry-point dispatch | `tests/test_cli.py::test_main_py_entrypoint_invokes_cli_and_propagates_exit_code` verifies the script calls the CLI and propagates its exit code. | Does not prove a human-facing interactive startup works in a terminal; the separate manual startup row remains NOT RUN. |
+| Equal-priority numeric ticket-ID tie-break | `tests/test_tickets.py::test_priority_sort_uses_priority_then_numeric_ticket_id` | Covers ordering logic in a unit test; the live equal-priority search scenario remains PARTIAL. |
+| Multi-ticket report through resolve/reopen | `tests/test_reports_cli.py::test_report_cli_shows_breakdowns_and_tracks_resolve_reopen` | Covers a two-ticket report and resolution percentage; the live manual sequence remains PARTIAL. |
+| Note-ID continuity after save/load | `tests/test_notes.py::test_notes_and_note_id_continuity_survive_save_and_load` | Covers persisted notes and the next note ID after reload; the live T004/note-ID scenario remains PARTIAL. |
+| Adding a note to a resolved ticket | `tests/test_notes.py::test_notes_survive_resolution_and_reopening` | Confirms the operation is rejected until reopening; the separate live CLI attempt remains unverified. |
+| Quiz invalid-answer retry and explanation validation | `tests/test_engineering_check.py` includes invalid-choice and explanation validation tests. | Automated tests do not establish a complete live demo by both fellows; Engineer A's independent demonstration still needs evidence. |
+
+
 ## Git collaboration and review evidence
 
 Record links and facts only after they happen. Do not self-approve a pull request or claim a review that was not performed.
