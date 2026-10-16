@@ -148,6 +148,8 @@ Numeric ticket-ID sorting:
 
 **Repository test / verification (not a claim of a local test run):** Reviewed `add_note` in `campusflow/notes.py`, which calls `_validate_existing_notes(existing)` before appending the new note. Reviewed the regression test in [PR #39](https://github.com/Jireh7521/CampusFlow752_Next/pull/39), `test_invalid_existing_note_fields_are_rejected_without_mutation`. It covers a blank existing author, a blank message, and a non-text message; for each case it expects `ValueError` and checks that the ticket equals its deep-copied pre-call state. GitHub Actions run [#38756195636](https://github.com/Jireh7521/CampusFlow752_Next/actions/runs/38756195636) reports all full-suite jobs successful on Python 3.8, 3.11, and 3.12. PR #39 was subsequently reviewed by Engineer B and merged; the review history and follow-up evidence are summarized in `docs/final-demo-checklist.md`. This entry remains a source-and-test review, not a claim that Engineer A personally ran the test command during this interaction.
 
+**Additional local verification (16 October 2026):** From the repository root on the local `main` checkout, ran `python3 -m unittest tests.test_notes`. The output reported `Ran 10 tests in 0.006s` and `OK`. This confirms all 10 tests in the note test module passed in that run. The specific regression test described above is the evidence for rejected malformed notes leaving the ticket unchanged. This was a module-level test run, not a full-suite run.
+
 **Decision:** Accept the validation-before-mutation approach because the implementation and regression test support the data-integrity requirement.
 
 **Reflection:** Rejecting invalid data is not enough by itself; the operation should also leave the original ticket unchanged when validation fails. Comparing the complete ticket before and after the rejected operation makes that requirement testable.
@@ -168,7 +170,7 @@ Numeric ticket-ID sorting:
 
 **Independent verification performed for this log:** Inspected `save_tickets` in `campusflow/storage.py`. It writes JSON to `path + ".tmp"`, then calls `os.replace(temp_path, path)`; its exception handler attempts to remove the temporary file and re-raises the original exception. Also inspected the merged [PR #35](https://github.com/Jireh7521/CampusFlow752_Next/pull/35) and `tests/test_storage.py`. The partial-write regression test simulates `json.dump` writing partial content and then raising `OSError`; it asserts that the original saved file is unchanged and the temporary file is absent. A separate replacement-failure test checks the same invariants for a failed `os.replace`. This is a source-and-test review, not a claim that I personally ran the test command during this interaction.
 
-**Observed result:** The checked-in tests specify those expected outcomes. PR #35 is merged into `main`. I have not recorded a new local test run here.
+**Observed result:** The checked-in tests specify those expected outcomes. PR #35 is merged into `main`. At the time of that review, I had not recorded a new local test run. A separate local verification was run on 16 October 2026 and is recorded below.
 
 **Decision:** Keep the failure cases distinct in the test plan: partial temporary-file write failure and replacement failure are separate scenarios, even though both should preserve the existing saved file and clean up the temporary file.
 
@@ -177,6 +179,8 @@ Numeric ticket-ID sorting:
 **Related files / evidence:** `campusflow/storage.py`; `tests/test_storage.py`; [merged PR #35](https://github.com/Jireh7521/CampusFlow752_Next/pull/35).
 
 **What I can now explain without AI:** The temporary file is written first, and the saved file is replaced only after serialization succeeds. Tests should simulate failures at both writing and replacement, then check the original file, temporary-file cleanup, and propagated exception.
+
+**Additional local verification (16 October 2026):** From the repository root on the local `main` checkout, ran `python3 -m unittest tests.test_storage -v`. The output reported `Ran 16 tests in 0.028s` and `OK`. The run included tests for simulated JSON-write and `os.replace()` failures, preservation of the previously saved file, and temporary-file cleanup. This is evidence for the specific scenarios exercised by the tests, not every possible system interruption.
 
 ### Interaction #3 — Narrowing an AI-assisted claim about atomic-save safety
 
@@ -197,4 +201,6 @@ Numeric ticket-ID sorting:
 **Related files / evidence:** [campusflow/storage.py](https://github.com/Jireh7521/CampusFlow752_Next/blob/main/campusflow/storage.py); [tests/test_storage.py](https://github.com/Jireh7521/CampusFlow752_Next/blob/main/tests/test_storage.py); [merged PR #35](https://github.com/Jireh7521/CampusFlow752_Next/pull/35).
 
 **What I can now explain without AI:** The current tests verify simulated Python exceptions during serialization and replacement. They verify preservation of the prior file and cleanup for those paths, but they do not prove cleanup after abrupt process termination or power loss.
+
+**Evidence boundary checked against the local run:** The 16-test storage-module run recorded under Interaction #2 includes the simulated exception-path tests discussed here. It does not simulate forced process termination or power loss, so the conclusion remains limited to the covered exception paths.
 
