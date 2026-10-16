@@ -84,6 +84,13 @@ Record any failed scenario, defect, workaround, or limitation honestly. If no de
 |---|---|---|---|
 |  |  |  |  |
 
+## Additional observations — 2026-10-16
+
+- Fresh temporary-directory empty-report check: launched the module CLI from an isolated temporary working directory, created a demo account, selected Report (option 8), and observed total tickets 0; status, priority, and category counts all 0; unresolved and resolved counts 0; resolution percentage 0%. No exception occurred. This confirms the empty-report scenario for this run.
+- Search with no matches: selected Search tickets (option 10), entered title substring `john` and category text `Ot`, left status and priority blank, and observed `No matching tickets found.` Because `Ot` is not one of the documented category values, this observation does **not** establish how invalid category filters are validated. Invalid-filter retry remains to be tested separately.
+- These additional observations do not satisfy the outstanding live demonstrations: `python3 main.py` startup; numeric ticket-ID tie-breaking for at least two equal-priority tickets; report metrics with multiple tickets before and after resolve/reopen; creating T001–T003, restarting, creating T004, adding another note to an earlier ticket, and restarting to verify ID continuity; rejection of a note while a ticket is resolved followed by successful note creation after reopening; and the quiz invalid-answer/blank-explanation retry plus Engineer A's independent demonstration and code explanations.
+- README contribution summaries still require explicit confirmation or correction from both fellows in [Issue #10](https://github.com/Jireh7521/CampusFlow752_Next/issues/10). No personal confirmation is inferred from PR approvals.
+
 ## Engineer B demo notes — observed on 2026-10-15 and 2026-10-16
 
 - Earlier tested commit: `9ac8e10b3ff0c5994e98c9e2621e82ef83469484`; Python 3.12.3; 123 tests ran in 19.058 seconds and finished `OK` (0 failures, 0 errors).
