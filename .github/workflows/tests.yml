@@ -12,12 +12,18 @@ permissions:
 jobs:
   unittest:
     name: unittest (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.11", "3.12"]
+        include:
+          - python-version: "3.8"
+            os: ubuntu-22.04
+          - python-version: "3.11"
+            os: ubuntu-latest
+          - python-version: "3.12"
+            os: ubuntu-latest
 
     steps:
       - name: Check out repository
