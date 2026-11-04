@@ -8,6 +8,8 @@ import json
 import mimetypes
 import os
 import secrets
+import threading
+import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -94,16 +96,50 @@ class CampusFlowHandler(BaseHTTPRequestHandler):
             if separator and key == "campusflow_session":
                 session_id = value
                 break
-        session = self.server.sessions.get(session_id) if session_id else None
+        with self.server.session_lock:
+            session = self.server.sessions.get(session_id) if session_id else None
+            if session is not None:
+                now = time.monotonic()
+                if now - session.get("last_seen", now) > 1800:
+                    self.server.sessions.pop(session_id, None)
+                    session = None
+                else:
+                    session["last_seen"] = now
         headers = {}
         if session is None:
             session_id = secrets.token_urlsafe(32)
-            session = {"csrf": secrets.token_urlsafe(32), "username": None, "failed": 0}
-            self.server.sessions[session_id] = session
+            session = {"csrf": secrets.token_urlsafe(32), "username": None, "failed": 0, "last_seen": time.monotonic()}
+            with self.server.session_lock:
+                self.server.sessions[session_id] = session
             headers["Set-Cookie"] = (
                 f"campusflow_session={session_id}; Path=/; HttpOnly; SameSite=Strict"
             )
         return session, headers
+
+    def _rotate_session(self, session, headers):
+        """Replace the session identifier after authentication."""
+        cookies = self.headers.get("Cookie", "")
+        old_id = None
+        for part in cookies.split(";"):
+            key, separator, value = part.strip().partition("=")
+            if separator and key == "campusflow_session":
+                old_id = value
+                break
+        new_id = secrets.token_urlsafe(32)
+        replacement = {
+            "csrf": secrets.token_urlsafe(32),
+            "username": session.get("username"),
+            "failed": 0,
+            "last_seen": time.monotonic(),
+        }
+        with self.server.session_lock:
+            if old_id:
+                self.server.sessions.pop(old_id, None)
+            self.server.sessions[new_id] = replacement
+        headers["Set-Cookie"] = (
+            f"campusflow_session={new_id}; Path=/; HttpOnly; SameSite=Strict"
+        )
+        return replacement
 
     def _require_csrf(self, session):
         supplied = self.headers.get("X-CSRF-Token", "")
@@ -145,7 +181,8 @@ class CampusFlowHandler(BaseHTTPRequestHandler):
                     "username": session.get("username"),
                 }, headers)
             self._require_login(session)
-            tickets = self._tickets()
+            with self.server.data_lock:
+                tickets = self._tickets()
             if parsed.path == "/api/tickets":
                 return self._send_json(HTTPStatus.OK, {"tickets": tickets}, headers)
             if parsed.path == "/api/work-queue":
@@ -169,54 +206,65 @@ class CampusFlowHandler(BaseHTTPRequestHandler):
             data = self._body()
 
             if parsed.path in ("/api/auth/setup", "/api/auth/login"):
-                users = load_users(self.server.users_path)
-                if parsed.path.endswith("/setup"):
-                    if users:
-                        return self._send_json(HTTPStatus.CONFLICT, {"error": "An account already exists. Please sign in."}, headers)
-                    create_user(users, data.get("username"), data.get("password"))
-                    save_users(users, self.server.users_path)
-                    session["username"] = users[-1]["username"]
-                    session["failed"] = 0
-                else:
-                    if session["failed"] >= 3:
-                        return self._send_json(HTTPStatus.TOO_MANY_REQUESTS, {"error": "Too many failed attempts. Refresh and try again later."}, headers)
-                    try:
-                        session["username"] = authenticate(users, data.get("username"), data.get("password"))
-                        session["failed"] = 0
-                    except ValueError:
-                        session["failed"] += 1
-                        return self._send_json(HTTPStatus.UNAUTHORIZED, {"error": "Invalid username or password."}, headers)
-                return self._send_json(HTTPStatus.OK, {"username": session["username"]}, headers)
+                with self.server.auth_lock:
+                    users = load_users(self.server.users_path)
+                    if parsed.path.endswith("/setup"):
+                        if users:
+                            return self._send_json(HTTPStatus.CONFLICT, {"error": "An account already exists. Please sign in."}, headers)
+                        create_user(users, data.get("username"), data.get("password"))
+                        save_users(users, self.server.users_path)
+                        session["username"] = users[-1]["username"]
+                    else:
+                        username_key = str(data.get("username") or "").strip().casefold()
+                        attempts, locked_until = self.server.failed_logins.get(username_key, (0, 0))
+                        now = time.monotonic()
+                        if now < locked_until:
+                            return self._send_json(HTTPStatus.TOO_MANY_REQUESTS, {"error": "Too many failed attempts for this username. Try again in 15 minutes."}, headers)
+                        if now >= locked_until and locked_until:
+                            attempts = 0
+                        try:
+                            session["username"] = authenticate(users, data.get("username"), data.get("password"))
+                            self.server.failed_logins.pop(username_key, None)
+                        except ValueError:
+                            attempts += 1
+                            locked_until = now + 900 if attempts >= 5 else 0
+                            self.server.failed_logins[username_key] = (attempts, locked_until)
+                            return self._send_json(HTTPStatus.UNAUTHORIZED, {"error": "Invalid username or password."}, headers)
+                session = self._rotate_session(session, headers)
+                return self._send_json(HTTPStatus.OK, {"username": session["username"], "csrfToken": session["csrf"]}, headers)
 
             self._require_login(session)
-            tickets = self._tickets()
-            candidate = json.loads(json.dumps(tickets))
             if parsed.path == "/api/auth/logout":
                 session["username"] = None
-                session["failed"] = 0
-                return self._send_json(HTTPStatus.OK, {"ok": True}, headers)
-            if parsed.path == "/api/tickets":
-                ticket = create_ticket(
-                    candidate, data.get("title"), data.get("category"),
-                    data.get("urgency"), data.get("affected_users"),
-                )
-                result = {"ticket": ticket}
-            elif parsed.path == "/api/tickets/assign":
-                ticket = assign_ticket(candidate, data.get("ticket_id"), data.get("assignee"))
-                result = {"ticket": ticket}
-            elif parsed.path == "/api/tickets/status":
-                ticket = change_status(candidate, data.get("ticket_id"), data.get("status"))
-                result = {"ticket": ticket}
-            elif parsed.path == "/api/tickets/reopen":
-                ticket = reopen_ticket(candidate, data.get("ticket_id"))
-                result = {"ticket": ticket}
-            elif parsed.path == "/api/tickets/notes":
-                ticket = add_note(candidate, data.get("ticket_id"), data.get("author"), data.get("message"))
-                result = {"ticket": ticket}
-            else:
+                session = self._rotate_session(session, headers)
+                return self._send_json(HTTPStatus.OK, {"ok": True, "csrfToken": session["csrf"]}, headers)
+            if parsed.path not in ("/api/tickets", "/api/tickets/assign", "/api/tickets/status", "/api/tickets/reopen", "/api/tickets/notes"):
                 return self._send_json(HTTPStatus.NOT_FOUND, {"error": "API route not found."}, headers)
-            self._save_candidate(candidate)
-            return self._send_json(HTTPStatus.OK, result, headers)
+            with self.server.data_lock:
+                tickets = self._tickets()
+                candidate = json.loads(json.dumps(tickets))
+                if parsed.path == "/api/tickets":
+                    ticket = create_ticket(
+                        candidate, data.get("title"), data.get("category"),
+                        data.get("urgency"), data.get("affected_users"),
+                    )
+                    result = {"ticket": ticket}
+                elif parsed.path == "/api/tickets/assign":
+                    ticket = assign_ticket(candidate, data.get("ticket_id"), data.get("assignee"))
+                    result = {"ticket": ticket}
+                elif parsed.path == "/api/tickets/status":
+                    ticket = change_status(candidate, data.get("ticket_id"), data.get("status"))
+                    result = {"ticket": ticket}
+                elif parsed.path == "/api/tickets/reopen":
+                    ticket = reopen_ticket(candidate, data.get("ticket_id"))
+                    result = {"ticket": ticket}
+                elif parsed.path == "/api/tickets/notes":
+                    ticket = add_note(candidate, data.get("ticket_id"), data.get("author"), data.get("message"))
+                    result = {"ticket": ticket}
+                else:
+                    return self._send_json(HTTPStatus.NOT_FOUND, {"error": "API route not found."}, headers)
+                self._save_candidate(candidate)
+                return self._send_json(HTTPStatus.OK, result, headers)
         except PermissionError as error:
             return self._send_json(HTTPStatus.UNAUTHORIZED, {"error": str(error)}, headers)
         except (AuthenticationError, StorageError, OSError, ValueError) as error:
@@ -232,6 +280,10 @@ def create_server(host="127.0.0.1", port=8000, tickets_path=DEFAULT_PATH, users_
     server.tickets_path = tickets_path
     server.users_path = users_path
     server.sessions = {}
+    server.session_lock = threading.RLock()
+    server.data_lock = threading.RLock()
+    server.auth_lock = threading.RLock()
+    server.failed_logins = {}
     return server
 
 

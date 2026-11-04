@@ -57,17 +57,24 @@ python3 -m campusflow.web
 
 Then open http://127.0.0.1:8000 in your browser. On first run, create the
 initial support account. Later visits use the same local account file as the
-CLI. The web interface supports the dashboard, ticket creation and filtering,
-ticket assignment, status changes, reopening, follow-up notes, the work queue,
-and reports.
+CLI. The web interface supports the dashboard, ticket creation and filtering
+by category, status, and priority, ticket assignment, status changes, reopening,
+follow-up notes, the work queue, and reports.
 
-The built-in server deliberately binds to localhost only. It is a development
-interface, not a production deployment: sessions are held in server memory,
-there is no HTTPS termination, persistent session store, role-based access
-control, or production-grade deployment configuration. Do not expose it
-directly to the public internet. A production deployment needs a reviewed
-application server, HTTPS, secure session lifecycle, deployment configuration,
-and additional security testing.
+The built-in server deliberately binds to localhost only. Web sessions are
+rotated after sign-in and sign-out and expire after 30 minutes of inactivity.
+Ticket updates are serialized within the web server to prevent overlapping
+requests from overwriting one another. Five failed sign-in attempts for a
+username trigger a 15-minute cooldown. The server uses CSRF protection and a
+restrictive same-origin Content Security Policy.
+
+This remains a development interface, not a production deployment: sessions
+and login throttling are held in server memory, there is no HTTPS termination,
+persistent session store, role-based access control, or production-grade
+deployment configuration. Do not expose it directly to the public internet.
+A production deployment needs a reviewed application server, HTTPS, secure
+cookie configuration, persistent session and rate-limit storage, deployment
+configuration, and additional security testing.
 
 ## Authentication
 
@@ -75,7 +82,7 @@ CampusFlow requires a local username and password before displaying ticket infor
 
 - On the first run, create the first account when prompted. Usernames are 3–32 characters and may contain letters, numbers, periods, underscores, and hyphens.
 - Passwords must be at least 12 characters. Password input is hidden in a real terminal.
-- On later runs, sign in with that account. Three failed attempts end the current run.
+- On later CLI runs, sign in with that account. The CLI allows three failed attempts per run. The web interface instead applies a shared 15-minute cooldown after five failed attempts for a username.
 - Accounts are stored separately in `data/users.json`. Passwords are stored as salted PBKDF2-HMAC-SHA256 hashes (600,000 iterations), not plain text. On platforms that support POSIX permissions, the account file is restricted to its owner.
 - Ticket data remains in `data/tickets.json`; account records and tickets are separate files.
 - If the account file is malformed, CampusFlow stops instead of silently replacing it.
