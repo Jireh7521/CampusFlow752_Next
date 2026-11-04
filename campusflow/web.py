@@ -47,7 +47,7 @@ class CampusFlowHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
-        self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'")
+        self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'")
         if headers:
             for key, value in headers.items():
                 self.send_header(key, value)
@@ -68,7 +68,7 @@ class CampusFlowHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(content)))
         self.send_header("Cache-Control", "no-cache")
         self.send_header("X-Content-Type-Options", "nosniff")
-        self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'")
+        self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'")
         self.end_headers()
         self.wfile.write(content)
 
@@ -98,10 +98,17 @@ class CampusFlowHandler(BaseHTTPRequestHandler):
                 break
         with self.server.session_lock:
             session = self.server.sessions.get(session_id) if session_id else None
+            if session is not None:
+                now = time.monotonic()
+                if now - session.get("last_seen", now) > 1800:
+                    self.server.sessions.pop(session_id, None)
+                    session = None
+                else:
+                    session["last_seen"] = now
         headers = {}
         if session is None:
             session_id = secrets.token_urlsafe(32)
-            session = {"csrf": secrets.token_urlsafe(32), "username": None, "failed": 0}
+            session = {"csrf": secrets.token_urlsafe(32), "username": None, "failed": 0, "last_seen": time.monotonic()}
             with self.server.session_lock:
                 self.server.sessions[session_id] = session
             headers["Set-Cookie"] = (
@@ -123,6 +130,7 @@ class CampusFlowHandler(BaseHTTPRequestHandler):
             "csrf": secrets.token_urlsafe(32),
             "username": session.get("username"),
             "failed": 0,
+            "last_seen": time.monotonic(),
         }
         with self.server.session_lock:
             if old_id:
