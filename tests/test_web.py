@@ -144,7 +144,8 @@ class CampusFlowWebTests(unittest.TestCase):
             response.read()
             self.assertEqual(response.status, 200)
             policy = response.getheader("Content-Security-Policy")
-            self.assertIn("style-src-attr 'unsafe-inline'", policy)
+            self.assertIn("style-src 'self'", policy)
+            self.assertNotIn("unsafe-inline", policy)
             self.assertIn("script-src 'self'", policy)
 
     def test_login_throttle_is_shared_between_sessions(self):
