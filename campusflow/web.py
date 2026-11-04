@@ -67,7 +67,7 @@ class CampusFlowHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(content)))
         self.send_header("Cache-Control", "no-cache")
         self.send_header("X-Content-Type-Options", "nosniff")
-        self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'")
+        self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'")
         self.end_headers()
         self.wfile.write(content)
 
@@ -216,13 +216,13 @@ class CampusFlowHandler(BaseHTTPRequestHandler):
                             self.server.failed_logins[username_key] = attempts + 1
                             return self._send_json(HTTPStatus.UNAUTHORIZED, {"error": "Invalid username or password."}, headers)
                 session = self._rotate_session(session, headers)
-                return self._send_json(HTTPStatus.OK, {"username": session["username"]}, headers)
+                return self._send_json(HTTPStatus.OK, {"username": session["username"], "csrfToken": session["csrf"]}, headers)
 
             self._require_login(session)
             if parsed.path == "/api/auth/logout":
                 session["username"] = None
                 session = self._rotate_session(session, headers)
-                return self._send_json(HTTPStatus.OK, {"ok": True}, headers)
+                return self._send_json(HTTPStatus.OK, {"ok": True, "csrfToken": session["csrf"]}, headers)
             if parsed.path not in ("/api/tickets", "/api/tickets/assign", "/api/tickets/status", "/api/tickets/reopen", "/api/tickets/notes"):
                 return self._send_json(HTTPStatus.NOT_FOUND, {"error": "API route not found."}, headers)
             with self.server.data_lock:
