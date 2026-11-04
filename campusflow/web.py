@@ -206,16 +206,16 @@ class CampusFlowHandler(BaseHTTPRequestHandler):
             data = self._body()
 
             if parsed.path in ("/api/auth/setup", "/api/auth/login"):
-                users = load_users(self.server.users_path)
-                if parsed.path.endswith("/setup"):
-                    if users:
-                        return self._send_json(HTTPStatus.CONFLICT, {"error": "An account already exists. Please sign in."}, headers)
-                    create_user(users, data.get("username"), data.get("password"))
-                    save_users(users, self.server.users_path)
-                    session["username"] = users[-1]["username"]
-                else:
-                    username_key = str(data.get("username") or "").strip().casefold()
-                    with self.server.auth_lock:
+                with self.server.auth_lock:
+                    users = load_users(self.server.users_path)
+                    if parsed.path.endswith("/setup"):
+                        if users:
+                            return self._send_json(HTTPStatus.CONFLICT, {"error": "An account already exists. Please sign in."}, headers)
+                        create_user(users, data.get("username"), data.get("password"))
+                        save_users(users, self.server.users_path)
+                        session["username"] = users[-1]["username"]
+                    else:
+                        username_key = str(data.get("username") or "").strip().casefold()
                         attempts, locked_until = self.server.failed_logins.get(username_key, (0, 0))
                         now = time.monotonic()
                         if now < locked_until:
