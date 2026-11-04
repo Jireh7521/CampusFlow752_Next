@@ -9,6 +9,7 @@ import mimetypes
 import os
 import secrets
 import threading
+import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -172,7 +173,8 @@ class CampusFlowHandler(BaseHTTPRequestHandler):
                     "username": session.get("username"),
                 }, headers)
             self._require_login(session)
-            tickets = self._tickets()
+            with self.server.data_lock:
+                tickets = self._tickets()
             if parsed.path == "/api/tickets":
                 return self._send_json(HTTPStatus.OK, {"tickets": tickets}, headers)
             if parsed.path == "/api/work-queue":
@@ -206,14 +208,19 @@ class CampusFlowHandler(BaseHTTPRequestHandler):
                 else:
                     username_key = str(data.get("username") or "").strip().casefold()
                     with self.server.auth_lock:
-                        attempts = self.server.failed_logins.get(username_key, 0)
-                        if attempts >= 5:
-                            return self._send_json(HTTPStatus.TOO_MANY_REQUESTS, {"error": "Too many failed attempts for this username. Try again later."}, headers)
+                        attempts, locked_until = self.server.failed_logins.get(username_key, (0, 0))
+                        now = time.monotonic()
+                        if now < locked_until:
+                            return self._send_json(HTTPStatus.TOO_MANY_REQUESTS, {"error": "Too many failed attempts for this username. Try again in 15 minutes."}, headers)
+                        if now >= locked_until and locked_until:
+                            attempts = 0
                         try:
                             session["username"] = authenticate(users, data.get("username"), data.get("password"))
                             self.server.failed_logins.pop(username_key, None)
                         except ValueError:
-                            self.server.failed_logins[username_key] = attempts + 1
+                            attempts += 1
+                            locked_until = now + 900 if attempts >= 5 else 0
+                            self.server.failed_logins[username_key] = (attempts, locked_until)
                             return self._send_json(HTTPStatus.UNAUTHORIZED, {"error": "Invalid username or password."}, headers)
                 session = self._rotate_session(session, headers)
                 return self._send_json(HTTPStatus.OK, {"username": session["username"], "csrfToken": session["csrf"]}, headers)
