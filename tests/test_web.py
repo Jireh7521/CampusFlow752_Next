@@ -1,5 +1,6 @@
 """Integration tests for the local CampusFlow web interface."""
 import http.client
+from concurrent.futures import ThreadPoolExecutor
 import json
 import tempfile
 import threading
@@ -224,6 +225,53 @@ class CampusFlowWebTests(unittest.TestCase):
         status, listed = self.request_json("GET", "/api/tickets")
         self.assertEqual(status, 200)
         self.assertIsNone(listed["tickets"][0]["assigned_to"])
+
+
+    def test_idle_session_expires_after_thirty_minutes(self):
+        self.sign_in_first_account()
+        old_cookie = self.cookie
+        session_id = old_cookie.split("=", 1)[1]
+        self.server.sessions[session_id]["last_seen"] = 0
+        status, session = self.request_json("GET", "/api/session")
+        self.assertEqual(status, 200)
+        self.assertFalse(session["authenticated"])
+        self.assertNotEqual(self.cookie, old_cookie)
+
+    def test_parallel_ticket_creations_keep_every_ticket(self):
+        self.sign_in_first_account()
+        cookie, csrf = self.cookie, self.csrf
+
+        def create(index):
+            connection = http.client.HTTPConnection(
+                "127.0.0.1", self.server.server_address[1]
+            )
+            payload = json.dumps({
+                "title": f"Parallel request {index}",
+                "category": "Software",
+                "urgency": "low",
+                "affected_users": 1,
+            })
+            connection.request(
+                "POST", "/api/tickets", body=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Cookie": cookie,
+                    "X-CSRF-Token": csrf,
+                },
+            )
+            response = connection.getresponse()
+            result = json.loads(response.read())
+            status = response.status
+            connection.close()
+            return status, result
+
+        with ThreadPoolExecutor(max_workers=5) as pool:
+            results = list(pool.map(create, range(5)))
+        self.assertTrue(all(status == 200 for status, _ in results), results)
+        status, listed = self.request_json("GET", "/api/tickets")
+        self.assertEqual(status, 200)
+        self.assertEqual(len(listed["tickets"]), 5)
+        self.assertEqual(len({ticket["id"] for ticket in listed["tickets"]}), 5)
 
 
 if __name__ == "__main__":
