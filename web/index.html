@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7fb">
+  <title>CampusFlow — Campus Helpdesk</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div id="auth-screen" class="auth-screen" hidden>
+    <div class="auth-card">
+      <a class="brand" href="/"><span class="brand-mark">C</span><span>Campus<span class="brand-light">Flow</span></span></a>
+      <p class="eyebrow">CAMPUS SUPPORT WORKSPACE</p>
+      <h1 id="auth-title">Welcome back</h1>
+      <p id="auth-description" class="muted">Sign in to manage campus support tickets.</p>
+      <form id="auth-form" class="stack">
+        <label>Username<input name="username" autocomplete="username" minlength="3" maxlength="32" required></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password" minlength="12" required></label>
+        <button id="auth-submit" class="button primary" type="submit">Sign in</button>
+        <p id="auth-error" class="form-error" role="alert"></p>
+      </form>
+      <p class="auth-foot">Local development version · CampusFlow</p>
+    </div>
+  </div>
+
+  <div id="app-shell" class="app-shell" hidden>
+    <aside class="sidebar">
+      <a class="brand" href="#"><span class="brand-mark">C</span><span>Campus<span class="brand-light">Flow</span></span></a>
+      <div class="workspace-label">WORKSPACE</div>
+      <nav class="nav-list" aria-label="Main navigation">
+        <button class="nav-item active" data-page="overview"><span class="nav-icon">▦</span>Overview</button>
+        <button class="nav-item" data-page="tickets"><span class="nav-icon">▤</span>All tickets<span id="nav-ticket-count" class="nav-count">0</span></button>
+        <button class="nav-item" data-page="queue"><span class="nav-icon">≋</span>Work queue</button>
+        <button class="nav-item" data-page="reports"><span class="nav-icon">▥</span>Reports</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="help-card"><span class="help-dot"></span><div><strong>Workspace status</strong><small>Local server connected</small></div></div>
+        <div class="user-row"><div class="avatar" id="user-avatar">U</div><div class="user-meta"><strong id="current-user">User</strong><small>Support staff</small></div><button id="logout-button" class="icon-button" title="Sign out" aria-label="Sign out">↪</button></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>Workspace</span><span class="crumb-slash">/</span><strong id="page-breadcrumb">Overview</strong></div>
+        <div class="top-actions"><span class="date-label" id="today-label"></span><button id="refresh-button" class="button secondary small">↻ <span>Refresh</span></button><button class="button primary small" data-open-create>＋ New ticket</button></div>
+      </header>
+
+      <section class="page active" id="page-overview">
+        <div class="page-heading"><div><p class="eyebrow">CAMPUS SUPPORT</p><h1>Good day, <span id="welcome-name">there</span> <span class="wave">✦</span></h1><p class="muted">Here's what's happening with your support desk today.</p></div><button class="button primary" data-open-create>＋ Create ticket</button></div>
+        <div class="stat-grid">
+          <article class="stat-card"><div class="stat-top"><span>Total tickets</span><span class="stat-icon indigo">▤</span></div><strong id="stat-total">0</strong><small class="muted">All recorded requests</small></article>
+          <article class="stat-card"><div class="stat-top"><span>Open tickets</span><span class="stat-icon blue">◷</span></div><strong id="stat-open">0</strong><small class="muted">Waiting for action</small></article>
+          <article class="stat-card"><div class="stat-top"><span>In progress</span><span class="stat-icon amber">↗</span></div><strong id="stat-progress">0</strong><small class="muted">Being worked on</small></article>
+          <article class="stat-card"><div class="stat-top"><span>Resolved</span><span class="stat-icon green">✓</span></div><strong id="stat-resolved">0</strong><small class="muted">Successfully completed</small></article>
+        </div>
+        <div class="content-grid">
+          <section class="panel recent-panel"><div class="panel-heading"><div><h2>Recent tickets</h2><p class="muted">Latest requests added to the helpdesk</p></div><button class="text-button" data-page="tickets">View all →</button></div><div id="recent-tickets" class="table-wrap"></div></section>
+          <section class="panel priority-panel"><div class="panel-heading"><div><h2>Priority overview</h2><p class="muted">Current ticket distribution</p></div></div><div id="priority-breakdown" class="priority-breakdown"></div><div class="resolution-box"><div><span>Resolution rate</span><strong id="resolution-rate">0%</strong></div><div class="progress-track"><div id="resolution-bar" class="progress-fill"></div></div><small class="muted" id="resolution-caption">0 resolved tickets</small></div></section>
+        </div>
+      </section>
+
+      <section class="page" id="page-tickets">
+        <div class="page-heading"><div><p class="eyebrow">SUPPORT MANAGEMENT</p><h1>All tickets</h1><p class="muted">Create, find and manage campus support requests.</p></div><button class="button primary" data-open-create>＋ Create ticket</button></div>
+        <section class="panel"><div class="toolbar"><div class="search-box"><span>⌕</span><input id="ticket-search" type="search" placeholder="Search by ticket title..."></div><select id="filter-status" aria-label="Filter by status"><option value="">All statuses</option><option value="open">Open</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option></select><select id="filter-priority" aria-label="Filter by priority"><option value="">All priorities</option><option>critical</option><option>high</option><option>medium</option><option>low</option></select></div><div id="all-tickets" class="table-wrap"></div></section>
+      </section>
+
+      <section class="page" id="page-queue">
+        <div class="page-heading"><div><p class="eyebrow">WHAT NEEDS ATTENTION</p><h1>Work queue</h1><p class="muted">Open tickets ordered by priority, then ticket number.</p></div></div>
+        <section class="panel"><div id="queue-tickets" class="table-wrap"></div></section>
+      </section>
+
+      <section class="page" id="page-reports">
+        <div class="page-heading"><div><p class="eyebrow">PERFORMANCE</p><h1>Reports</h1><p class="muted">A live summary of your helpdesk activity.</p></div></div>
+        <div class="report-grid"><section class="panel"><h2>By status</h2><div id="report-status"></div></section><section class="panel"><h2>By priority</h2><div id="report-priority"></div></section><section class="panel"><h2>By category</h2><div id="report-category"></div></section><section class="panel report-highlight"><p class="eyebrow">RESOLUTION RATE</p><strong id="report-rate">0%</strong><p class="muted" id="report-summary">No tickets recorded yet.</p></section></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="create-dialog" class="dialog">
+    <form id="create-form" class="dialog-card">
+      <div class="dialog-heading"><div><p class="eyebrow">NEW REQUEST</p><h2>Create a ticket</h2></div><button type="button" class="icon-button" data-close-dialog aria-label="Close">×</button></div>
+      <label>Ticket title<input name="title" maxlength="200" placeholder="e.g. Wi-Fi unavailable in Lab 2" required></label>
+      <div class="form-row"><label>Category<select name="category" required><option value="Network">Network</option><option value="Hardware">Hardware</option><option value="Software">Software</option><option value="Other">Other</option></select></label><label>Urgency<select name="urgency" required><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label></div>
+      <label>Affected users<input name="affected_users" type="number" min="1" step="1" value="1" required></label>
+      <p id="create-error" class="form-error" role="alert"></p>
+      <div class="dialog-actions"><button type="button" class="button secondary" data-close-dialog>Cancel</button><button class="button primary" type="submit">Create ticket</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="detail-dialog" class="dialog"><div class="dialog-card"><div class="dialog-heading"><div><p class="eyebrow">TICKET DETAILS</p><h2 id="detail-title">Ticket</h2></div><button type="button" class="icon-button" data-close-dialog aria-label="Close">×</button></div><div id="detail-content"></div></div></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

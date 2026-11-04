@@ -43,6 +43,32 @@ or:
 python3 -m campusflow.cli
 ```
 
+## Web interface (local development)
+
+CampusFlow also includes a browser-based interface backed by the same ticket,
+workflow, report, authentication, and JSON persistence modules as the CLI.
+It uses the Python standard library and does not require a frontend build step.
+
+Start the local web server from the repository root:
+
+```bash
+python3 -m campusflow.web
+```
+
+Then open http://127.0.0.1:8000 in your browser. On first run, create the
+initial support account. Later visits use the same local account file as the
+CLI. The web interface supports the dashboard, ticket creation and filtering,
+ticket assignment, status changes, reopening, follow-up notes, the work queue,
+and reports.
+
+The built-in server deliberately binds to localhost only. It is a development
+interface, not a production deployment: sessions are held in server memory,
+there is no HTTPS termination, persistent session store, role-based access
+control, or production-grade deployment configuration. Do not expose it
+directly to the public internet. A production deployment needs a reviewed
+application server, HTTPS, secure session lifecycle, deployment configuration,
+and additional security testing.
+
 ## Authentication
 
 CampusFlow requires a local username and password before displaying ticket information.
