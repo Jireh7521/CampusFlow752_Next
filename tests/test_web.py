@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 import tempfile
 import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -231,7 +232,7 @@ class CampusFlowWebTests(unittest.TestCase):
         self.sign_in_first_account()
         old_cookie = self.cookie
         session_id = old_cookie.split("=", 1)[1]
-        self.server.sessions[session_id]["last_seen"] = 0
+        self.server.sessions[session_id]["last_seen"] = time.monotonic() - 1801
         status, session = self.request_json("GET", "/api/session")
         self.assertEqual(status, 200)
         self.assertFalse(session["authenticated"])
