@@ -170,5 +170,60 @@ class CampusFlowWebTests(unittest.TestCase):
         self.assertIn("15 minutes", result["error"])
 
 
+    def test_ticket_assignment_status_notes_and_reopen(self):
+        self.sign_in_first_account()
+        status, created = self.request_json(
+            "POST", "/api/tickets",
+            {"title": "Lab computer issue", "category": "Hardware",
+             "urgency": "medium", "affected_users": 3},
+        )
+        self.assertEqual(status, 200, created)
+        ticket_id = created["ticket"]["id"]
+        status, assigned = self.request_json(
+            "POST", "/api/tickets/assign",
+            {"ticket_id": ticket_id, "assignee": "Support Team"},
+        )
+        self.assertEqual(status, 200, assigned)
+        status, changed = self.request_json(
+            "POST", "/api/tickets/status",
+            {"ticket_id": ticket_id, "status": "in_progress"},
+        )
+        self.assertEqual(status, 200, changed)
+        status, noted = self.request_json(
+            "POST", "/api/tickets/notes",
+            {"ticket_id": ticket_id, "author": "webtester",
+             "message": "Checked the affected workstation."},
+        )
+        self.assertEqual(status, 200, noted)
+        self.assertEqual(noted["ticket"]["notes"][0]["note_id"], "N001")
+        status, resolved = self.request_json(
+            "POST", "/api/tickets/status",
+            {"ticket_id": ticket_id, "status": "resolved"},
+        )
+        self.assertEqual(status, 200, resolved)
+        status, reopened = self.request_json(
+            "POST", "/api/tickets/reopen", {"ticket_id": ticket_id},
+        )
+        self.assertEqual(status, 200, reopened)
+        self.assertEqual(reopened["ticket"]["status"], "open")
+
+    def test_invalid_ticket_assignment_does_not_change_saved_data(self):
+        self.sign_in_first_account()
+        status, created = self.request_json(
+            "POST", "/api/tickets",
+            {"title": "Projector issue", "category": "Hardware",
+             "urgency": "low", "affected_users": 1},
+        )
+        self.assertEqual(status, 200, created)
+        status, result = self.request_json(
+            "POST", "/api/tickets/assign",
+            {"ticket_id": created["ticket"]["id"], "assignee": "   "},
+        )
+        self.assertEqual(status, 400)
+        status, listed = self.request_json("GET", "/api/tickets")
+        self.assertEqual(status, 200)
+        self.assertIsNone(listed["tickets"][0]["assigned_to"])
+
+
 if __name__ == "__main__":
     unittest.main()
